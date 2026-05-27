@@ -33,31 +33,31 @@ Three methods are compared across all example systems:
 
 ```
 .
-├── MATLAB synthesis
-│   ├── reach_avoid_controller.m      # Main backstepping certificate synthesis
-│   ├── solvesop_bounded_control.m    # Bounded control via SOP + SOS
-│   ├── solve_k1_controller_sop.m     # k1 controller SOP solve
-│   ├── solve_vanilla_k1_controller.m # Unconstrained (vanilla) k1 controller
-│   ├── export_to_python.m            # Export symbolic results → Python
-│   ├── example_double_integrator.m   # Double integrator
-│   ├── example_dubins_car.m          # Dubins car
-│   ├── example_manipulator.m         # 2-DoF planar manipulator
-│   └── ...                           # Utility functions (poly2sym, sym2pvar, …)
+├── README.md  reach_avoid_mpc.png  .gitignore
 │
-├── Python helpers
-│   ├── functional.py                 # Simulation utilities and color helpers
-│   └── acrobot_inverse_kinematics.py # IK solver for the 2-link manipulator
+├── matlab/                           # MATLAB synthesis pipeline
+│   ├── reach_avoid_controller.m      #   Main backstepping certificate synthesis
+│   ├── solvesop_bounded_control.m    #   Bounded control via SOP + SOS
+│   ├── solve_k1_controller_sop.m     #   k1 controller SOP solve
+│   ├── solve_vanilla_k1_controller.m #   Unconstrained (vanilla) k1 controller
+│   ├── export_to_python.m            #   Export symbolic results → controllers/*.py
+│   ├── example_double_integrator.m   #   Double integrator
+│   ├── example_dubins_car.m          #   Dubins car
+│   ├── example_manipulator.m         #   2-DoF planar manipulator
+│   └── …                             #   Utilities (poly2sym, sym2pvar, plotPolyL, …)
 │
-├── Generated controllers (active)
-│   ├── sop_bounded_control_ex1_debug_20260314_191715.py        # double integrator no-MPC
+├── python/                           # Shared Python helpers
+│   ├── functional.py                 #   Simulation utilities and color helpers
+│   └── acrobot_inverse_kinematics.py #   IK solver for the 2-link manipulator
+│
+├── controllers/                      # Exported controllers (active, imported by notebooks)
 │   ├── sop_bounded_control_ex1_debug_20260314_213424.py        # double integrator MPC
-│   ├── sop_bounded_control_ex4_result_20260315_110901.py       # double integrator MPC (full)
-│   ├── sop_bounded_control_dubins_car_result_20260316_211504.py
-│   ├── sop_bounded_control_unconstrained_controller_20260316_211252.py
-│   ├── sop_bounded_control_acrobot_result_20260317_222858.py   # manipulator
-│   └── k1_acrobot_cdc2026.py                                   # manipulator k1 controller
+│   ├── sop_bounded_control_dubins_car_result_20260316_211504.py        # Dubins RA-MPC
+│   ├── sop_bounded_control_unconstrained_controller_20260316_211252.py # Dubins unconstrained
+│   ├── sop_bounded_control_acrobot_result_20260317_222858.py           # manipulator RA-MPC
+│   └── k1_acrobot_cdc2026.py                                           # manipulator k1 controller
 │
-├── Jupyter notebooks
+├── notebooks/                        # Experiment notebooks (run from this dir)
 │   ├── example_double_integrator_no_mpc.ipynb  # Unconstrained Reach-Avoid
 │   ├── example_double_integrator_mpc.ipynb     # Reach-Avoid MPC
 │   ├── example_dubins_car_unconstrained_reach_avoid.ipynb   # Unconstrained Reach-Avoid
@@ -65,12 +65,21 @@ Three methods are compared across all example systems:
 │   ├── example_dubins_car_vanilla_mpc.ipynb                 # Vanilla MPC
 │   ├── example_manipulator_unconstrained_reach_avoid.ipynb  # Unconstrained Reach-Avoid
 │   ├── example_manipulator_reach_avoid_mpc.ipynb            # Reach-Avoid MPC
-│   ├── example_manipulator_vanilla_mpc.ipynb                # Vanilla MPC
-│   └── example_manipulator_cdc2025.ipynb
+│   └── example_manipulator_vanilla_mpc.ipynb                # Vanilla MPC
 │
-├── generated/                        # Archived intermediate MATLAB exports (git-ignored)
-└── .gitignore
+├── data/                             # Cached trajectories (loaded by notebooks)
+│   ├── traj_controls_reach_avoid_mpc.npz
+│   ├── traj_controls_vanilla_mpc.npz
+│   └── traj_controls_ra_mpc_acrobot.npz
+│
+├── scripts/                          # Standalone experiment scripts (see scripts/README.md)
+└── archive/                          # Superseded material
+    └── example_manipulator_cdc2025.ipynb
 ```
+
+Each notebook starts with a small bootstrap cell that puts `controllers/` and
+`python/` on `sys.path` and points `DATA` at `data/`, so notebooks run correctly
+from the `notebooks/` directory.
 
 ## Workflow
 
@@ -86,7 +95,7 @@ MATLAB
       │  produces u*(x), V(x)
       ▼
   export_to_python.m
-      │  writes  sop_bounded_control_XXX_<timestamp>.py
+      │  writes  controllers/sop_bounded_control_XXX_<timestamp>.py
       ▼
 Python
   example_XX_unconstrained_reach_avoid.ipynb  ← Unconstrained Reach-Avoid
@@ -136,21 +145,23 @@ conda activate rab_mpc
 
 ## Running the Notebooks
 
-1. Run the desired MATLAB example script to generate the controller Python file:
+1. Run the desired MATLAB example script (from `matlab/`) to generate the
+   controller Python file; the export is written to `controllers/`:
 
    ```matlab
-   % in MATLAB
-   example_double_integrator   % synthesises controller and exports to Python
+   % in MATLAB, from the matlab/ directory
+   example_double_integrator   % synthesises controller and exports to controllers/
    example_dubins_car
    example_manipulator
    ```
 
-2. Open the corresponding Jupyter notebook and run all cells:
+2. Open the corresponding Jupyter notebook (from `notebooks/`) and run all cells:
    ```bash
-   jupyter notebook example_double_integrator_mpc.ipynb
+   jupyter notebook notebooks/example_double_integrator_mpc.ipynb
    ```
 
-The notebooks are self-contained after the controller Python file exists.
+The notebooks are self-contained after the controller Python file exists; the
+bootstrap cell at the top resolves `controllers/`, `python/`, and `data/`.
 
 ## Experiment Settings
 

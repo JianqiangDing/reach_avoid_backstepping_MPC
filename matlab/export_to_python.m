@@ -21,6 +21,19 @@ function export_to_python(u_opt, certificate_opt, k1_opt, params, file_name)
 
     % Append timestamp to file name (before the extension)
     [dir, base, ext] = fileparts(file_name);
+
+    % When the caller passes a bare file name (no directory), write the exported
+    % controller into <repo-root>/controllers/, resolved from this script's own
+    % location (matlab/), so the target is correct regardless of the MATLAB cwd.
+    if isempty(dir)
+        repo_root = fileparts(fileparts(mfilename('fullpath')));
+        dir = fullfile(repo_root, 'controllers');
+
+        if ~exist(dir, 'dir')
+            mkdir(dir);
+        end
+    end
+
     timestamp = datestr(now, 'yyyymmdd_HHMMSS');
     stamped_name = fullfile(dir, sprintf('%s_%s%s', base, timestamp, ext));
 
