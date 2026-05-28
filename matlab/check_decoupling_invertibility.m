@@ -16,11 +16,16 @@
 %   bound_min/max: sampling box for the state (n x 1)
 %   n_samples   : number of random samples
 %   out_csv     : path to write the per-sample CSV (state cols + det,min_sv,cond,in_safe)
+%   constraint_fn (optional): map applied to the sampled matrix X (n_samples x n)
+%                 to enforce state-manifold constraints before evaluation, e.g.
+%                 @(X) [X(:,1:4), X(:,1)+X(:,2)] for an augmented state x5 = x1+x2.
+%                 Without it, coordinates are sampled independently, which can
+%                 fabricate off-manifold configurations the real system never visits.
 %
 % OUTPUT
 %   stats : struct with summary fields (also printed)
 function stats = check_decoupling_invertibility(name, fx, gx, hx, x_vars, y_vars, ...
-        safe_set, bound_min, bound_max, n_samples, out_csv)
+        safe_set, bound_min, bound_max, n_samples, out_csv, constraint_fn)
 
     % A(x) only depends on (f, g, h); reach_avoid_controller computes it for us.
     [~, ~, ~, ~, ~, ~, ~, A_matrix, ~, ~, p, ~] = ...
@@ -40,6 +45,9 @@ function stats = check_decoupling_invertibility(name, fx, gx, hx, x_vars, y_vars
 
     rng(0);
     X = bound_min(:)' + (bound_max(:)' - bound_min(:)') .* rand(n_samples, n);
+    if nargin >= 12 && ~isempty(constraint_fn)
+        X = constraint_fn(X);  % project onto the physical state manifold (e.g. x5 = x1 + x2)
+    end
     Xc = num2cell(X, 1);  % one column-vector per state variable (vectorized args)
 
     % Evaluate every A entry over all samples at once.

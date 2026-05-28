@@ -86,11 +86,11 @@ mu_val = 15; % mu — matches Python acrobot notebook (mu_1 = 15)
 samples_num = 10000; % ~10 % of samples land in safe set with these bounds
 
 % Sampling bounds for [q1; q2; dq1; dq2; q1+q2]
-% q1 ∈ [-2, 0.5], q2 ∈ [0.8, π] puts ~10% of samples inside psi(h(x)) ≥ 0
-% (vs 4.6% with wide [-π,π]² bounds).
-% q1+q2 bounds are derived from q1+q2 ∈ [-2+0.8, 0.5+π] = [-1.2, 3.64]
+% q1 ∈ [-2, 0.5]; q2 ∈ [0.8, π-0.8] excludes the elbow singularities q2 ∈ {0, π}
+% (det A ∝ sin(q2)), so the decoupling matrix stays nonsingular over the region.
+% q1+q2 bounds derived from q1+q2 ∈ [-2+0.8, 0.5+(π-0.8)] = [-1.2, π-0.3].
 bound_min = [-2.0; 0.8; -0.5; -0.5; -1.2];
-bound_max = [0.5; pi; 0.5; 0.5; 3.64];
+bound_max = [0.5; pi - 0.8; 0.5; 0.5; pi - 0.3];
 
 % ── Solve for bounded control inputs via SOP with SOS constraints ─────────────
 t_solve = tic;

@@ -49,7 +49,9 @@ mu_val = 0.1; % backstepping certificate parameter (matches the Python Dubins no
 
 samples_num = 1000; % number of random samples to find the valid samples that satisfy the control input bounds for the pseudo ux
 
-bound_min = [-2; -2; 2 * pi / 3; -1.0]; % lower bounds for sampling state [x1; x2; th; v]
+% v >= 0.1 (always forward) keeps the decoupling matrix nonsingular:
+% det A(x) = -v, singular at v = 0, so the sampling region must exclude v ~ 0.
+bound_min = [-2; -2; 2 * pi / 3; 0.1]; % lower bounds for sampling state [x1; x2; th; v]
 bound_max = [2; 2; 4 * pi / 3; 1.0]; % upper bounds for sampling state [x1; x2; th; v]
 
 % solve the bounded control inputs using scenario optimization programming (SOP) with SOS constraints
