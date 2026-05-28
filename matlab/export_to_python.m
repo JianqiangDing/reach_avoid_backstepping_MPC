@@ -19,7 +19,6 @@ function export_to_python(u_opt, certificate_opt, k1_opt, params, file_name)
     all_vars = symvar([u_opt(:); certificate_opt; k1_opt(:)]);
     var_names = arrayfun(@char, all_vars, 'UniformOutput', false);
 
-    % Append timestamp to file name (before the extension)
     [dir, base, ext] = fileparts(file_name);
 
     % When the caller passes a bare file name (no directory), write the exported
@@ -34,8 +33,12 @@ function export_to_python(u_opt, certificate_opt, k1_opt, params, file_name)
         end
     end
 
-    timestamp = datestr(now, 'yyyymmdd_HHMMSS');
-    stamped_name = fullfile(dir, sprintf('%s_%s%s', base, timestamp, ext));
+    % Timestamp suffix disabled: use a stable, reproducible export filename so
+    % re-running an example overwrites the same file (deterministic given rng(42))
+    % instead of accumulating timestamped copies.
+    % timestamp = datestr(now, 'yyyymmdd_HHMMSS');
+    % stamped_name = fullfile(dir, sprintf('%s_%s%s', base, timestamp, ext));
+    stamped_name = fullfile(dir, [base, ext]);
 
     % write the results to a python file
     fid = fopen(stamped_name, 'w');

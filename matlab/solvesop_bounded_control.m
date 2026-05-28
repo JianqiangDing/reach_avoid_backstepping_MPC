@@ -1,6 +1,6 @@
 % function to solve bounded control for given reach-avoid backstepping controller
 function [ux_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_control(ux, k1_sym, J_k1_sym, mu, lambda, certificate, cert_term_dict, p, r_deg, ...
-        x_vars, y_vars, hx, safe_set, target_set, mu_val, lb, ub, ds, dv, samples_num, bound_min, bound_max)
+        x_vars, y_vars, hx, safe_set, target_set, mu_val, lb, ub, ds, dv, samples_num, bound_min, bound_max, uncon_export_name)
 
     % INPUTS:
     % ux: original controller expression obtained from backstepping design, symbolic vector of size (m x 1), m is the control input dimension
@@ -22,6 +22,13 @@ function [ux_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_contr
     % dv: degree of the k1 controller polynomial
     % bound_min: lower bounds for sampling the state space for finding valid samples that satisfy the set (safe, target, vanilla reach-avoid certificate) constraints, vector of size (n x 1)
     % bound_max: maximum lower bounds for sampling the state space for finding valid samples that satisfy the set (safe, target, vanilla reach-avoid certificate) constraints, vector of size (n x 1)
+
+    % Example-specific filename for the exported unconstrained baseline controller,
+    % so different examples do not overwrite a single shared file (the timestamp
+    % that previously disambiguated them has been removed for reproducible names).
+    if nargin < 23 || isempty(uncon_export_name)
+        uncon_export_name = 'sop_bounded_control_unconstrained_controller.py';
+    end
 
     [k1_y, k1_lambda, k1_delta] = solve_vanilla_k1_controller(y_vars, safe_set, target_set, dv, ds);
 
@@ -47,8 +54,10 @@ function [ux_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_contr
 
     ux_pseudo = substitute_mu_lambda(ux_pseudo, mu, lambda, mu_val, k1_lambda); % use the computed value from the vanilla k1 controller design as the lambda value for solving the bounded control inputs
 
-    % >>>>>>>>>>>>>>>>>>>>>> DEBUG <<<<<<<<<<<<<<<<<<<<
-    % export the obtained unconstrained controller and the certificate for comparison later
+    % ── Export the unconstrained controller + certificate ────────────────────
+    % NOTE: not debug — this export is intentional and load-bearing. The file
+    % sop_bounded_control_unconstrained_controller_*.py is imported by the
+    % "unconstrained reach-avoid" notebooks as the baseline closed-form controller.
     % If an auxiliary variable x5 = x1+x2 was introduced to work around the
     % compound-trig-argument limitation, substitute it back before exporting
     % so the Python output uses only the natural state variables.
@@ -66,8 +75,8 @@ function [ux_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_contr
     params_for_export.mu_val = mu_val;
     params_for_export.ds = ds;
     params_for_export.dv = dv;
-    export_to_python(ux_pseudo_exp, certificate_exp, k1_y, params_for_export, 'sop_bounded_control_unconstrained_controller.py');
-    % >>>>>>>>>>>>>>>>>>>>>> DEBUG <<<<<<<<<<<<<<<<<<<<
+    export_to_python(ux_pseudo_exp, certificate_exp, k1_y, params_for_export, uncon_export_name);
+    % ─────────────────────────────────────────────────────────────────────────
 
     % select the samples that satisfy the control input bounds for the pseudo ux
 

@@ -28,7 +28,9 @@ target_set_sym = y1 ^ 2 - 0.01; % target_set: target_set <=0 inside target set
 %     + (3 * y1 + 0.3) ^ 2 * (4 * y2 + 0.2) ^ 2 - 0.01);
 
 % synthesize the reach-avoid backstepping controller with bounded control inputs (symbolic)
+t_design = tic;
 [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vector, ks, p, r_deg] = reach_avoid_controller(fx_sym, gx_sym, hx_sym, x_vars_sym, y_vars_sym, safe_set_sym);
+fprintf('__TIMING__,%s,design,%.6f\n', mfilename, toc(t_design));
 % here u is a symbolic vector [u1; u2], each entry is a symbolic expression of state variables x1,x2,x3,x4, and unknown parameters
 % ers (mu values, lambda, k1 controler polynomial)
 
@@ -49,8 +51,10 @@ bound_min = [-1.1; -1.1]; % lower bounds for sampling the state space for findin
 bound_max = [1.1; 1.1]; % upper bounds for sampling the state space for finding valid samples that satisfy the set (safe, target, vanilla reach-avoid certificate) constraints
 
 % solve the bounded control inputs using scenario optimization programming (SOP) with SOS constraints
+t_solve = tic;
 [u_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_control(u, k1, J_k1, mu, lambda, certificate, cert_term_dict, p, r_deg, x_vars_sym, y_vars_sym, ...
-    hx_sym, safe_set_sym, target_set_sym, mu_val, lb, ub, ds, dv, samples_num, bound_min, bound_max);
+    hx_sym, safe_set_sym, target_set_sym, mu_val, lb, ub, ds, dv, samples_num, bound_min, bound_max, 'sop_bounded_control_ex1_unconstrained.py');
+fprintf('__TIMING__,%s,sop_solve,%.6f\n', mfilename, toc(t_solve));
 
 % compute the bounds of the obtained controller over zero superlevel set of the certificate
 [num_1, den_1] = numden(u_opt(1));

@@ -188,6 +188,13 @@ function [k1_opt, J_k1_opt, k1_delta] = solve_k1_controller_sop(ux, k1_sym, J_k1
 
     % extract the obtained delta
     k1_delta = double(sosgetsol(prog, delta)); % extract delta as a double value
+
+    % guard against a silently failed / infeasible SOS solve: a valid solve
+    % returns a finite delta here
+    if isempty(k1_delta) || isnan(k1_delta)
+        error('solve_k1_controller_sop:solverFailed', ...
+            'SOS solve returned no valid solution (delta empty or NaN); check the Mosek solver status.');
+    end
 end
 
 % helper function to add constraints from valid samles for certificate non-negativity

@@ -16,8 +16,6 @@ function [k1_opt, k1_lambda, k1_delta] = solve_vanilla_k1_controller(y_vars, saf
     % k1_lambda: obtained lambda scalar for the single-integrator system, scalar decision variable in the SOS program
     % k1_delta: obtained delta scalar for the single-integrator system, scalar decision variable in the SOS program
 
-    echo on;
-
     % get the number of outputs
     p = length(y_vars);
     % create pvar variables for the single-intgegrator system
@@ -115,6 +113,11 @@ function [k1_opt, k1_lambda, k1_delta] = solve_vanilla_k1_controller(y_vars, saf
     k1_lambda = double(sosgetsol(prog, lambda));
     k1_delta = double(sosgetsol(prog, delta));
 
-    echo off;
+    % guard against a silently failed / infeasible SOS solve producing a bad
+    % controller: a valid solve returns finite scalars here
+    if isempty(k1_lambda) || isempty(k1_delta) || any(isnan([k1_lambda, k1_delta]))
+        error('solve_vanilla_k1_controller:solverFailed', ...
+            'SOS solve returned no valid solution (lambda/delta empty or NaN); check the Mosek solver status.');
+    end
 
 end

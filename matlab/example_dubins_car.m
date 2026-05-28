@@ -29,9 +29,12 @@ alpha = 1e-3 * (-target_set_sym + 300);
 safe_set_sym = alpha * h_raw; % h(y): zsafe_set >= 0 inside safe set
 
 % synthesize the reach-avoid backstepping controller with bounded control inputs (symbolic)
+t_design = tic;
 [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vector, ks, p, r_deg] = reach_avoid_controller(fx_sym, gx_sym, hx_sym, x_vars_sym, y_vars_sym, safe_set_sym);
-% here u is a symbolic vector [u1; u2], each entry is a symbolic expression of state variables x1,x2,x3,x4, and unknown parameters
-% ers (mu values, lambda, k1 controler polynomial)
+fprintf('__TIMING__,%s,design,%.6f\n', mfilename, toc(t_design));
+% here u is a symbolic vector [u1; u2], each entry is a symbolic expression of
+% the state variables [x1, x2, th, v] and the unknown parameters
+% (mu values, lambda, k1 controller polynomial)
 
 % define constraint for the control input bounds
 % Ax = [1 0; -1 0; 0 1; 0 -1]; % example constraint matrix for control input bounds, here we want to enforce |u1| <= 100 and |u2| <= 100
@@ -42,7 +45,7 @@ ub = [5; 5]; % upper bounds for control inputs [omega_max; a_max]
 ds = 4; % degree of the auxiliary SOS polynomials for the single-integrator system
 dv = 4; % degree of the k1 controller polynomial
 
-mu_val = 0.1; % example value for mu just for testing, HAVE TO DISCUSS THIS IN THE PAPER
+mu_val = 0.1; % backstepping certificate parameter (matches the Python Dubins notebook)
 
 samples_num = 1000; % number of random samples to find the valid samples that satisfy the control input bounds for the pseudo ux
 
@@ -50,8 +53,10 @@ bound_min = [-2; -2; 2 * pi / 3; -1.0]; % lower bounds for sampling state [x1; x
 bound_max = [2; 2; 4 * pi / 3; 1.0]; % upper bounds for sampling state [x1; x2; th; v]
 
 % solve the bounded control inputs using scenario optimization programming (SOP) with SOS constraints
+t_solve = tic;
 [u_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_control(u, k1, J_k1, mu, lambda, certificate, cert_term_dict, p, r_deg, x_vars_sym, y_vars_sym, ...
-    hx_sym, safe_set_sym, target_set_sym, mu_val, lb, ub, ds, dv, samples_num, bound_min, bound_max);
+    hx_sym, safe_set_sym, target_set_sym, mu_val, lb, ub, ds, dv, samples_num, bound_min, bound_max, 'sop_bounded_control_dubins_car_unconstrained.py');
+fprintf('__TIMING__,%s,sop_solve,%.6f\n', mfilename, toc(t_solve));
 
 % compute the bounds of the obtained controller over zero superlevel set of the certificate
 % [num_1, den_1] = numden(u_opt(1));

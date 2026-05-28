@@ -67,8 +67,10 @@ safe_set_sym =- ((4 * (y1 - 2) - 2 * y2 ^ 3) ^ 2) + 0.8 * y2 ^ 3 + 10;
 target_set_sym = ((y1 - 2 - 3.5) ^ 2/1.2 ^ 2) + ((y2 - 1.8) ^ 2/0.4 ^ 2) - 2;
 
 % ── Synthesize reach-avoid backstepping controller (symbolic) ─────────────────
+t_design = tic;
 [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vector, ks, p, r_deg] = ...
     reach_avoid_controller(fx_sym, gx_sym, hx_sym, x_vars_sym, y_vars_sym, safe_set_sym);
+fprintf('__TIMING__,%s,design,%.6f\n', mfilename, toc(t_design));
 
 % ── Optimisation parameters ───────────────────────────────────────────────────
 rng(42);
@@ -91,10 +93,13 @@ bound_min = [-2.0; 0.8; -0.5; -0.5; -1.2];
 bound_max = [0.5; pi; 0.5; 0.5; 3.64];
 
 % ── Solve for bounded control inputs via SOP with SOS constraints ─────────────
+t_solve = tic;
 [u_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_control( ...
     u, k1, J_k1, mu, lambda, certificate, cert_term_dict, p, r_deg, ...
     x_vars_sym, y_vars_sym, hx_sym, safe_set_sym, target_set_sym, ...
-    mu_val, lb, ub, ds, dv, samples_num, bound_min, bound_max);
+    mu_val, lb, ub, ds, dv, samples_num, bound_min, bound_max, ...
+    'sop_bounded_control_acrobot_unconstrained.py');
+fprintf('__TIMING__,%s,sop_solve,%.6f\n', mfilename, toc(t_solve));
 
 % ── Substitute x5 = x1+x2 back → 4-D expressions for Python export ───────────
 % The 5-D state was only needed to satisfy the SOS framework's trig detection.

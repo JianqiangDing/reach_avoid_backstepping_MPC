@@ -22,7 +22,15 @@
 %   upper_bound – scalar double; the certified upper bound (returns NaN on solver failure)
 % NOTE: The feasible region should be compact (bounded) for the SOS problem
 %       to be well-posed.  For unbounded sets add bounding-box multipliers following the pattern in demo_find_poly_bounds.m.
-function [lower_bound, upper_bound] = compute_poly_bounds(num_poly, den_poly, superlevel_set_poly, ds_min, epsilon)
+function [lower_bound, upper_bound] = compute_poly_bounds(num_poly, den_poly, superlevel_set_poly, ds_min, epsilon, R2)
+    % R2 (optional): squared radius of the Archimedean ball enforcing compactness.
+    % It MUST cover the feasible (zero-superlevel) set. Defaults to 10 (radius
+    % ~3.16, enough for the unit disk); pass a larger value for sets that extend
+    % beyond that, e.g. the Dubins/manipulator reach-avoid sets.
+    if nargin < 6 || isempty(R2)
+        R2 = 10;
+    end
+
     % ── Convert sym inputs to pvar if needed ────────────────────────────────
     if isa(num_poly, 'sym') || isa(den_poly, 'sym') || isa(superlevel_set_poly, 'sym')
         % detect trig terms across all three expressions and replace with
@@ -58,11 +66,11 @@ function [lower_bound, upper_bound] = compute_poly_bounds(num_poly, den_poly, su
     vars = eval(['[' strjoin(var_names, ', ') ']']);
 
     % Four explicit calls; algebraic sign logic is encapsulated in the helper.
-    lb_pos = solve_fraction_bound(vars, num_poly, den_poly, superlevel_set_poly, ds_min, epsilon, 1, 'lower', 1);
-    ub_pos = solve_fraction_bound(vars, num_poly, den_poly, superlevel_set_poly, ds_min, epsilon, 1, 'upper', 1);
+    lb_pos = solve_fraction_bound(vars, num_poly, den_poly, superlevel_set_poly, ds_min, epsilon, 1, 'lower', 1, R2);
+    ub_pos = solve_fraction_bound(vars, num_poly, den_poly, superlevel_set_poly, ds_min, epsilon, 1, 'upper', 1, R2);
 
-    lb_neg = solve_fraction_bound(vars, num_poly, den_poly, superlevel_set_poly, ds_min, epsilon, -1, 'lower', 1);
-    ub_neg = solve_fraction_bound(vars, num_poly, den_poly, superlevel_set_poly, ds_min, epsilon, -1, 'upper', 1);
+    lb_neg = solve_fraction_bound(vars, num_poly, den_poly, superlevel_set_poly, ds_min, epsilon, -1, 'lower', 1, R2);
+    ub_neg = solve_fraction_bound(vars, num_poly, den_poly, superlevel_set_poly, ds_min, epsilon, -1, 'upper', 1, R2);
 
     lower_bound = min(lb_pos, lb_neg);
     upper_bound = max(ub_pos, ub_neg);
@@ -74,7 +82,7 @@ end
 % sign_Q =  1 : denominator region  {den_poly >= epsilon}
 % sign_Q = -1 : denominator region  {den_poly <= -epsilon}
 % =========================================================================
-function bound_val = solve_fraction_bound(poly_vars, num_poly, den_poly, S_poly, ds_min, epsilon, sign_Q, bound_type, is_quiet)
+function bound_val = solve_fraction_bound(poly_vars, num_poly, den_poly, S_poly, ds_min, epsilon, sign_Q, bound_type, is_quiet, R2)
     ds = ds_min + mod(ds_min, 2);
     prog = sosprogram(poly_vars);
 
@@ -84,9 +92,8 @@ function bound_val = solve_fraction_bound(poly_vars, num_poly, den_poly, S_poly,
     [prog, s_S] = sospolyvar(prog, monomials(poly_vars, 0:ds));
     [prog, s_Q] = sospolyvar(prog, monomials(poly_vars, 0:ds));
 
-    % Archimedean ball: required for compactness so the SOS problem is well-posed
-    % (radius 10 is sufficient to cover the unit disk)
-    R2 = 10;
+    % Archimedean ball: required for compactness so the SOS problem is well-posed.
+    % R2 (squared radius) is supplied by the caller and must cover the feasible set.
     ball_poly = R2 - sum(poly_vars .^ 2);
     [prog, s_ball] = sospolyvar(prog, monomials(poly_vars, 0:ds));
 
