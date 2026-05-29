@@ -50,7 +50,8 @@ With a strong weight the solver drove `||k1||^2 -> ~2e-8` (`k1 ≈ 0`), yet the 
 bounds were unchanged. The control magnitude is **k1-independent**: `k1` only sets the
 top-level virtual output velocity, while the bulk of `u` cancels the drift and stabilizes
 the relative-degree chain per the certificate (high-degree safe-set gradients, `mu`/`lambda`).
-The regularization was reverted.
+The regularization was reverted. More precisely, `u` is *affine* in `k1` but the leverage is
+far too weak; §5 confirms this with the strongest incentive (minimize the control slack).
 
 ## 4. mu_val is the effective lever (with a reach-avoid set tradeoff)
 
@@ -74,6 +75,45 @@ Dubins:
 The committed paper controller (`mu = 0.1`) does **not** strictly satisfy `|u| <= 5` over
 its region either — its reported "validity" is the trajectory/sampling-based claim
 (the tested initial conditions succeed and stay within bounds).
+
+## 5. Soft-constraint (slack) SOP — definitive test of whether the SOP can bound `u`
+
+Built a slack variant (**new files; originals untouched**): `matlab/solve_k1_controller_sop_slack.m`,
+`matlab/solvesop_bounded_control_slack.m`, `matlab/test_slack_dubins.m`, `matlab/test_slack_manipulator.m`.
+
+Two changes vs the original SOP:
+1. **Sample the whole reach-avoid region** (safe, outside target, `cert ≥ 0`); drop the original's
+   "already-feasible" pre-filter. *Root cause this exposed:* `solvesop_bounded_control.m:92‑94`
+   keeps only samples where the **unconstrained** controller already satisfies the bound
+   (`valid_indices`), so the original SOP **never constrains the violating region** — the main
+   reason constrained ≈ unconstrained.
+2. **Relax** `|u_i| ≤ ub_i` to `|u_i| ≤ ub_i + s_i`, `s_i ≥ 0`, and **minimize `delta + Σ s_i`**.
+   Always feasible; `s_i` reports the achievable-bound margin (`achievable = ub + s`).
+
+Constraints actually added: Dubins 398 samples → 1592 control scalar ineqs + 398 (3×3) certificate
+LMIs; manipulator 446 samples → 1784 + 446.
+
+Results (requested ub: Dubins ±5, manip ±500):
+
+| system          | slack `s*`     | achievable `ub+s` | slack-controller **dense** range        | vs unconstrained |
+|-----------------|----------------|-------------------|------------------------------------------|------------------|
+| Dubins (mu=0.1) | `[75.8, 5.0]`  | `[±80.8, ±10]`    | `u1∈[-70.9, 92.1]`, `u2∈[-11.3, 8.6]`    | **identical**    |
+| manip (mu=15)   | `[8420, 1809]` | `[±8920, ±2309]`  | `tau1∈[-16200, 10480]`                   | **worse**        |
+
+- **Dubins — no improvement.** Even sampling the whole region *and* explicitly minimizing the
+  control slack, the controller is pointwise identical to the unconstrained one → the SOP-on-`k1`
+  cannot reduce `|u|` (strongest-possible confirmation of §3).
+- **Manipulator — worse.** The degree-2 `k1` over 446 sparse 5-D samples **overfits**: slack at the
+  samples is ±8920 but the dense range is ±16200 (blows up between samples, amplified by `A^{-1}`).
+  The whole-region scenario approach can *degrade* the controller when samples are sparse.
+- **Slack underestimates the true range** (Dubins 80.8 vs dense 92; manip 8920 vs dense 16200) — the
+  sample-generalization gap. Use the **dense** `compute_poly_bounds_sampling` range as the achievable
+  bound, not `s*`.
+
+Net: the slack reformulation is well-posed and a good diagnostic but **confirms, not fixes** the
+limitation. Four independent checks now agree (control-field range, pointwise field diff, closed-loop
+simulation, and this incentivized slack solve): the input-constraint SOP does **not** yield a distinct,
+more-bound-respecting controller. **`mu` is the only lever** (§4); do not adopt the slack controllers.
 
 ## Open decisions
 

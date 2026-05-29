@@ -75,8 +75,12 @@ fprintf('__TIMING__,%s,design,%.6f\n', mfilename, toc(t_design));
 % ── Optimisation parameters ───────────────────────────────────────────────────
 rng(42);
 
-lb = [-500; -500]; % lower torque bounds [N·m]  (gravity alone reaches ~76 N·m)
-ub = [500; 500]; % upper torque bounds [N·m]
+% Torque bounds chosen to cover what the mu=15 reach-avoid controller actually
+% needs over the FL region (tau1 in ~[-5016,4402], tau2 in ~[-135,541]); the
+% manipulator's drift cancellation (gravity/Coriolis) dominates the magnitude,
+% so |tau|<=500 is not achievable while keeping the large reach-avoid set.
+lb = [-5500; -700]; % lower torque bounds [N·m]
+ub = [5500; 700]; % upper torque bounds [N·m]
 
 ds = 4; % degree of auxiliary SOS polynomials for single-integrator
 dv = 2; % degree of k1 controller polynomial
