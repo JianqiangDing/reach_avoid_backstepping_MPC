@@ -51,7 +51,7 @@ bounds were unchanged. The control magnitude is **k1-independent**: `k1` only se
 top-level virtual output velocity, while the bulk of `u` cancels the drift and stabilizes
 the relative-degree chain per the certificate (high-degree safe-set gradients, `mu`/`lambda`).
 The regularization was reverted. More precisely, `u` is *affine* in `k1` but the leverage is
-far too weak; §5 confirms this with the strongest incentive (minimize the control slack).
+far too weak; §5–§6 confirm this (slack incentive, and the full `λ`/co-design study).
 
 ## 4. mu_val is the effective lever (with a reach-avoid set tradeoff)
 
@@ -115,10 +115,80 @@ limitation. Four independent checks now agree (control-field range, pointwise fi
 simulation, and this incentivized slack solve): the input-constraint SOP does **not** yield a distinct,
 more-bound-respecting controller. **`mu` is the only lever** (§4); do not adopt the slack controllers.
 
+## 6. Can `λ` (hence `k1`) bound `u`? — full `λ`/co-design study
+
+Follow-up to §3/§5. **New files (originals untouched):**
+`matlab/solve_vanilla_k1_controller_xi.m` (the SOS floor `xi0` exposed as an argument),
+`matlab/solvesop_bounded_control_slack_xi.m`, and tests `matlab/test_lambda_effect.m`,
+`test_lambda_sweep.m`, `test_lambda_codesign.m`, `test_codesign_sop.m`, `test_manip_collapse.m`.
+Visualized in `scripts/compare_lambda_effect.ipynb` (6 sections; data in `data/lambda_*.csv`,
+`codesign_sop_*.csv`, `manip_collapse.csv`).
+
+**6.1 `λ` enters `u` only via `0.5·λ·(Lf h − k1)`, and `λ` is pinned at the `1e-8` floor.**
+For relative degree 2, `b_i = μ·Dψ_i + Σ_j J_k1(i,j)·Lf h_j + 0.5·λ·(Lf h_i − k1_i) − Lf² h_i`,
+`u = A⁻¹ b`. `solve_vanilla_k1_controller` only imposes `λ ≥ xi0 = 1e-8` and minimizes `δ`, so the
+solved `λ` sits at the floor (Dubins `1.1e-8`, manip `1.7e-7`). `test_lambda_effect`: `u(λ=computed)`
+vs `u(λ=0)` differ by ≤1e-8 % of `|u|` (bit-identical); even `k1=0` (value **and** Jacobian) changes
+`u` by ≤4e-6 % (Dubins) / ≤0.002 % (manip). At the solved point `k1`/`λ` are immaterial.
+
+**6.2 Raising `λ` to `μ`-scale does NOT activate the (fixed) `k1`.** `test_lambda_sweep` holds the
+obtained `k1` and sweeps `λ`. `μ` multiplies the *large* safe-set gradient `Dψ`; `λ` multiplies the
+*small* `(Lf h − k1)`, so equal gains ≠ equal magnitudes. At `λ=μ`, k1's effect on `u` is still
+~1e-6 % (Dubins) / ~0.04 % (manip); it reaches 1 % only at `λ≈30·μ` (manip), never within `λ≤1e3` (Dubins).
+
+**6.3 Co-design (raise `xi0`, re-solve `k1`) activates `k1` but never *reduces* `|u|`.**
+`test_lambda_codesign` raises the `xi0` floor and re-solves `k1` (λ stays a decision variable, not
+fixed). Feasible up to `100·μ`; the re-solved `k1` grows with `λ` so k1's effect climbs (manip 8 % at
+`λ=μ`, ~100 % at `λ=100·μ`). **But `max|u|` never shrinks** — flat (set by `μ·Dψ`), then blows up
+(Dubins 356→8109 at `λ=100`; manip →2.7e13). Making `k1` matter only *adds* control effort.
+
+**6.4 Co-design + slack SOP — samples still can't bound `u`; the manipulator set collapses.**
+`test_codesign_sop` runs the whole-region slack SOP at the raised `λ`. **Dubins**: raising `xi0`
+makes constrained ≠ unconstrained (84 % distinct at `λ=10`) and drops the *sample-claimed* bound 5×
+(`ub+slack` 80→16), **but the dense `|u1|` stays ±92** — the SOP **overfits** the 242 samples (the §5
+gap, now amplified by the leverage). **Manipulator**: raising `λ` even to `0.1` (≪ μ=15) **collapses
+the reach-avoid set to empty** (`raset` 0.051→0; the sampler returns "0 reach-avoid samples").
+
+**Mechanism of the manipulator collapse (measured — `test_manip_collapse.m` → `data/manip_collapse.csv`).**
+For relative degree 2 the certificate is `V = safe(h) − Σ_i (1/(2μ_i))·(Lf h_i − k1_i)²`, and `λ`
+enters **only** through the solved vanilla `k1` (`ks(1)=k1`). Crucially `k1` is a polynomial in the
+**output** `y=h(x)` (end-effector position) only, while `Lf h_i = −l1·sin(x1)·x3 − l2·sin(x5)·(x3+x4)`
+depends on the joint **velocities** `x3,x4` — which `k1` structurally cannot represent. Sweeping the
+floor `xi0` (over the FL box, restricted to `{safe≥0}`, ~1296 samples):
+
+| xi0 (≈λ) | max\|k1\| | median penalty | max penalty | min V | reach-avoid frac |
+|----------|-----------|----------------|-------------|-------|------------------|
+| 1e-8 (baseline) | 34   | 1.2   | 39    | −38    | 0.046 |
+| 1e-4            | 5512 | 2.8e4 | 1.0e6 | −1.0e6 | 0     |
+| 1e-2            | 4522 | 1.8e4 | 6.9e5 | −6.9e5 | 0     |
+| 0.1             | 7841 | 5.5e4 | 2.1e6 | −2.1e6 | 0     |
+
+Reading the table — the collapse is sharp, not gradual:
+1. **`k1` jumps ~160× the instant `λ` leaves the `1e-8` floor** (34 → ~5500). At `λ≈0` the vanilla
+   solve only minimizes `δ` and leaves `k1` tiny; once `λ` is a *genuinely* positive number the
+   reaching condition `∇S·k1 ≳ λ·S` forces `k1` large enough to dominate `λ·S` over the safe set.
+   The exact value of `λ∈[1e-4, 0.5]` barely matters — `k1` sits in the "large" regime (~5–8k) throughout.
+2. **The penalty scales like `k1²`** (when `|k1| ≫ |Lf h|`, `(Lf h − k1)² ≈ k1²`): max penalty goes
+   `39 → 1.0e6`, i.e. `≈ (5512/34)² ≈ 2.6e4×`, matching the squared `k1` jump.
+3. **The penalty (~1e6) dwarfs the safe-set value** (`safe_m = −(4(y1−2)−2y2³)² + 0.8·y2³ + 10`, so
+   `safe ≲ 10`), so `V = safe − penalty ≈ −1e6` **everywhere** → `{V≥0}` is empty.
+
+Why the manipulator and not Dubins: the manipulator's set is **already razor-thin at baseline**
+(`min V = −38`, only **4.6 %** of the box has `V≥0`), so it has essentially no margin to absorb *any*
+`k1` growth — even `λ=1e-4` (≪ μ=15) empties it. Dubins keeps a fat margin (41 %) and its `k1` stays
+moderate, so it tolerates `λ` up to ~10. (μ does not fight this — μ is *fixed* here; only `k1`,
+through `λ`, changes.)
+
+**Net.** Five independent checks agree (control-field range §2, pointwise diff, closed-loop sim, slack
+SOP §5, and this `λ`/co-design study §6): the input-constraint SOP cannot produce a distinct, more-
+bound-respecting controller, and `λ`/certificate-shaping cannot bound `u` while keeping a valid
+reach-avoid set. **`μ` is the only lever** (§4).
+
 ## Open decisions
 
 - **Strict bound** (`mu ≈ 0.0068`, small reach-avoid set ~21%) vs **large set**
   (`mu = 0.1`, ~89%, empirical/trajectory-based bound claim) — for the paper.
-- Whether `lambda` / certificate-shaping can enlarge the at-±5 region beyond ~21%.
+- ~~Whether `lambda` / certificate-shaping can enlarge the at-±5 region~~ — **answered (§6): no.**
+  Raising `λ` does not reduce `|u|`; it overfits (Dubins) or collapses the reach-avoid set (manip).
 - Controller files in `controllers/` are kept at the committed (paper) versions; the
   FL-region edits in the example scripts are **not yet re-exported** to controllers.
