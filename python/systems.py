@@ -87,9 +87,29 @@ def make_callables(sys, u_opt):
     )
 
 
-def simulate(sys, cb, x0):
-    """Closed-loop simulate from x0. Returns dict: t, X (n_steps x dim), reached, stayed_safe, max_abs_u."""
+def simulate(sys, cb, x0, max_step=None, rtol=1e-8, atol=1e-10):
+    """Closed-loop simulate from x0. Returns dict: t, X (n_steps x dim), reached, stayed_safe, max_abs_u.
+
+    Parameters
+    ----------
+    sys : dict
+        System description (from `dubins_system()` / `manipulator_system()`).
+    cb : dict
+        Lambdified closed-loop callables (from `make_callables`).
+    x0 : array-like
+        Initial state.
+    max_step : float, optional
+        Integrator max step size. If None, uses `sys["dt"]` (the default 0.02s
+        for Dubins, 0.0025s for the manipulator). Passing a smaller value
+        forces finer time resolution — useful when verifying that observed
+        behaviour (e.g. transient safe-set violations) isn't a step-size
+        artifact.
+    rtol, atol : float
+        Relative / absolute tolerance for the adaptive integrator (DOP853 for
+        Dubins, otherwise fixed-step RK4).
+    """
     n = len(sys["state"]); x0 = np.asarray(x0, float)
+    dt = sys["dt"] if max_step is None else float(max_step)
     if sys["integ"] == "ivp":
         from scipy.integrate import solve_ivp
 
@@ -101,12 +121,12 @@ def simulate(sys, cb, x0):
             return float(np.squeeze(cb["target"](*x)))
         ev.terminal = True; ev.direction = -1
         sol = solve_ivp(rhs, (0.0, sys["t_max"]), x0, method="DOP853", events=ev,
-                        rtol=1e-8, atol=1e-10, max_step=sys["dt"], dense_output=False)
+                        rtol=rtol, atol=atol, max_step=dt, dense_output=False)
         X = sol.y.T; t = sol.t
         reached = sol.status == 1  # terminal event fired
     else:  # rk4 with kinematic-singularity stop
         from functional import simulate as rk4_step
-        dt = sys["dt"]; max_steps = int(sys["t_max"] / dt)
+        max_steps = int(sys["t_max"] / dt)
         xs = [x0.copy()]; t = [0.0]; x = x0.reshape(1, -1)
         reached = False
         for k in range(max_steps):

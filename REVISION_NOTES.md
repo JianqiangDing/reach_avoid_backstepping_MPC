@@ -239,6 +239,211 @@ enforces `|u| ≤ ub` as hard constraints; the input-constrained reach-avoid set
 **terminal set** enabling recursive feasibility), and **C1 should be framed as "a terminal set
 consistent with the input constraints", NOT "a bound-respecting feedback law".**
 
+## 8. Manipulator μ-sweep (parallel to §4, 2026-05-30)
+
+**Why this test.** §7 pivoted the input-constraint demo to the MPC level. Before committing to
+that, check whether a different `mu` can give the manipulator a "sufficiently fat" reach-avoid
+set, then revisit `k1`/`λ` adjustment on top of that fatter baseline. New script
+`matlab/sweep_mu_manipulator.m` solves vanilla `k1` once (μ-independent), binds it into `u(x;mu)`
+and `V(x;mu)`, and scans μ — reporting **`ra/safe`** = fraction of the *safe set* certified
+(the meaningful denominator, matching §4) and the **dense** `|τ|` range over the certified RA set.
+
+| μ | ra/safe | τ1 range (RA set) | max\|τ\| | within ±500 |
+|---|---|---|---|---|
+| 5             | 0.54 | `[-2370, 1660]`   | `2.4e3` | no |
+| 10            | 0.66 | `[-5460, 4990]`   | `5.5e3` | no |
+| **15 (paper)** | **0.72** | **`[-10160, 8120]`** | **`1.0e4`** | no |
+| 30            | 0.84 | `[-47000, 33700]` | `4.7e4` | no |
+| 50            | 0.89 | `[-3.5e5, 7.5e4]` | `3.5e5` | no |
+| 100           | 0.94 | `[-6.9e5, 3.3e5]` | `6.9e5` | no |
+| 200           | 0.96 | `[-1.4e6, 1.2e7]` | `1.2e7` | no |
+| 500           | 0.99 | `[-3.4e6, 3.1e7]` | `3.1e7` | no |
+| 1000          | 1.00 | `[-6.8e6, 6.2e7]` | `6.2e7` | no |
+
+**Three findings:**
+
+1. **The §6.4 "razor-thin margin (5%)" framing was on the wrong denominator.** That 5% is
+   *fraction of the box*; the **safe set is only ~6% of the box** to begin with (1908/30000 samples
+   satisfy `safe≥0`). On the *safe-set* fraction — the meaningful one, matching §4 — the manipulator's
+   baseline RA set is **72%**, comparable to Dubins' 89% at μ=0.1. What makes the §6.4 collapse
+   catastrophic is `min V ≈ -38` (close to zero relative to penalty magnitudes ~1e6 once `k1`
+   jumps), **not** a small set-fraction. The "redundancy" is in `min V`, not in set-fraction.
+
+2. **μ↔ra/safe monotonic for the manipulator** (analog of §4 Dubins confirmed): 54%→100% as μ
+   goes 5→1000. *Larger μ → larger reach-avoid set* holds structurally for both systems.
+
+3. **μ↔\|τ\| tradeoff is far steeper than Dubins.** Where Dubins paid `u1 ≈ ±733·μ` (linear),
+   manipulator max\|τ\| grows super-linearly: `2.4e3 → 1.0e4 → 3.5e5 → 1.2e7` for `μ = 5 → 15 → 50 → 200`.
+   **No tested μ keeps `|τ| ≤ 500`** — even μ=5 is 5× over while only 54% ra/safe; the
+   strict-bound regime (analog of Dubins' `μ≈0.0068`) would be at μ<5, giving an unhelpfully small set.
+
+**Implication for the "fatten-then-adjust" plan.** Step 1 (fatten the set) is already largely
+achieved at the paper's `μ=15` (72% ra/safe ≈ Dubins' fat-margin regime); pushing to 89% costs
+max\|τ\|≈3.5e5. Step 2 (use raised `λ` + co-design `k1` to drive `|τ|→500`) would require the SOP
+to cancel **20× excess at μ=15 (10160→500)** or **700× excess at μ=50**. But §7 Dubins — with only
+~16× excess at fat margin (41%) and full leverage — **could not shrink dense `|u1|`** (overfit at
+70-85). The manipulator's structurally worse conditions (deg-2 `k1` vs deg-5 `Dψ`; output-only `k1`
+vs velocity-dependent `Lf h`; §6.4) plus the larger excess factor make a feedback-level
+bound-respecting result strictly less achievable than Dubins, not more.
+
+**Net.** §8 corrects the §6.4 framing (manipulator baseline margin is decent, ~72% of safe set —
+its fragility is in `min V`, not in set fraction) and reproduces the §4 tradeoff for the manipulator,
+but **does not open a path to a bound-respecting feedback controller.** Recommendation: hold §7's
+conclusion — MPC-level demonstration with **`μ = 15`** as the unconstrained baseline; the
+input-constraint terminal-set framing of C1 covers what feedback-level bounding cannot deliver.
+
+## 9. Dubins per-sample slack demo + output-space comparison (2026-05-30)
+
+Followup to §6 / §7. A self-contained demo bundle at `scripts/dubins_demo/` exercises the
+slack-SOP and hard-SOP machinery end-to-end, with the per-sample slack distribution as the
+selection tool for `ub_demo` and a closed-loop output-space comparison.
+
+**New artifacts (all under `scripts/dubins_demo/`):**
+- `dubins_demo.ipynb` — 32 cells, §0 math formulation, §1–§4 SOP synthesis + slack distribution,
+  §5 `ub_demo` from p80, §6 hard SOP on filtered subset, §7 output-space difference, §7.2
+  4-color RA-set overlay, §8 closed-loop trajectories from a green-region $x_0$.
+- `matlab/sample_n_valid.m` — iteratively samples the FL box until exactly `n_valid` lie inside
+  the RA region (drops the original's "initial random count" semantics).
+- `matlab/solve_k1_controller_sop_slack_persample.m` — per-sample slack solver, takes
+  `slack_weight` parameter; objective is `δ + slack_weight · Σ s_{j,i}` with one scalar slack
+  per (sample, channel) shared between the upper and lower bound (KKT: $s^* = \max(0, |u| - \text{ub})$).
+- `matlab/build_dubins_demo.m`, `build_dubins_demo_subset.m`, `build_dubins_demo_subset_hard.m`
+  — env-driven drivers (MU, XI0, UB1/UB2, N_VALID, SLACK_WEIGHT, SAMPLES_CSV, TAG).
+- `/tmp/gen_dubins_demo_nb.py` + `/tmp/exec_nb_with_outputs.py` — gen script + headless
+  executor that preserves outputs of unchanged code cells (source matching), runs only
+  empty-output cells, and supports `--force / --force-all` for explicit re-execution.
+- Notebook checks cached `meta_*.csv` against current PARAMS before deciding to call MATLAB,
+  so changing `slack_weight` / `n_valid_samples` (which don't appear in the filename suffix)
+  still triggers regeneration.
+
+**Settled PARAMS for the demo:** μ=0.1, xi0=10, ub=5, n_valid_samples=250, dv=4, ds=4,
+slack_weight=**100**, coverage_pct=80, sim_max_step=1e-4.
+
+### 9.1 `slack_weight` matters: MOSEK is suboptimal at the default `w=1`
+
+At `slack_weight=1` the per-sample slack SOP returns a numerically-suboptimal solution that
+trades slack for marginally smaller `δ`. KKT diagnostic (§5.4 in the notebook):
+
+- After the subset SOP at `(μ=0.1, xi0=10, ub_demo≈5.02)` on 157 kept samples, MOSEK
+  reported `ch1 max slack = 1.05`, `δ = 108.5`.
+- But `max|u_orig(x_j)| = 5.007` over the kept samples; re-using the original `k1` in the
+  subset SOP would give `sum_slack = 0`, `δ = 109.08`, total objective ≈ 109.08.
+- MOSEK's returned solution: `δ + Σ s = 108.5 + 1.24 = 109.74`, **0.7 unit worse**.
+
+Sweeping `w ∈ {1, 10, 100, 1000}` at the same `(μ, xi0, ub_demo)`:
+
+| w | `δ` | `ch1 max slack` | `dense max|u₁|` |
+|---|---|---|---|
+| 1 | 108.5 | 1.04 | 92 |
+| 10 | 109.8 | 0.20 | 93 |
+| **100** | **111.1** | **0.0005** | **74** |
+| 1000 | 203.3 (blow-up) | 0.0022 | 76 |
+
+`w=100` is the sweet spot. Beyond ~100 the SDP conditioning fails (`δ` doubles, slack stops
+improving). Empirical heuristic: keep `w · sum_slack` within ~3 orders of magnitude of `δ`
+(here `δ` ~10²), i.e. `w ∈ [10, 10⁴]` is the workable range.
+
+**Side benefit observed:** at `w=100` the *dense* max|u| drops from ~92 to ~74 versus
+`w=1`. Heuristic: pinning slack at KKT tightens the constraint set the polynomial `k_1`
+must satisfy *at the SOP samples*, reducing the polynomial's "swing room" between samples
+— a soft regularizer.
+
+### 9.2 Honest `p80` of the slack distribution at `w=100`
+
+With the weighted solver the §4 slack distribution becomes:
+
+| channel | max | p99 | p90 | **p80** | p50 |
+|---|---|---|---|---|---|
+| u1 (ω) | 11.1 | 5.97 | 0.080 | **0.0083** | 0.008 |
+| u2 (a) | 3.84 | 0.97 | 0.008 | **0.0081** | 0.008 |
+
+(With `w=1` p80 was 0.021 — inflated by ~3.5× because MOSEK overstated slacks.)
+
+So `ub_demo_i = 5 + p80(s_{·,i}^*) ≈ 5.008` for both channels — essentially `ub_request`
+itself once the outliers are dropped.
+
+### 9.3 Hard SOP on the kept subset is feasible
+
+`build_dubins_demo_subset_hard.m` solves:
+
+```
+min δ  s.t.  CBF SOS,  M_j(k_1)⪰0 ∀j ∈ kept,  -ub_demo_i ≤ u_i(x_j) ≤ +ub_demo_i,  δ≥0
+```
+
+At `(μ=0.1, xi0=10, ub_demo≈5.008, 156 kept samples)`: **feasible**, `δ = 112.5`,
+`feasratio = -0.96`, `pinf = dinf = 0`. So strict bounds at the 156 kept samples are jointly
+achievable.
+
+### 9.4 Output-space RA-set overlay reaffirms §6.4 / §7 negative finding
+
+On 4000 dense samples in $X_S \setminus X_T$ (§7.2), 4-color membership for the **hard-SOP**
+controller (vs vanilla `k_1`):
+
+| | count | % |
+|---|---|---|
+| both certify (green) | 2238 | 55.95% |
+| only unc certifies (blue) | 55 | **1.38%** |
+| only con certifies (red) | 1321 | **33.02%** |
+| neither | 386 | 9.65% |
+
+Subset metrics: `subset_rate = 0.629`, `removed_frac = 0.024`, `unexpected_frac = **0.371**`.
+Even with **hard SOP + filtered samples + tight `ub_demo ≈ ub`**, the constrained certificate
+region is **NOT** a subset of the unconstrained one — 37% of con-cert area lies outside
+unc-cert area. This **confirms** the structural negative finding from §6 / §7: the SOS
+`minimize δ` objective inherently favors a `k_1` with larger `{V ≥ 0}` than vanilla, and
+input constraints don't shrink that. Removal is < 3%.
+
+### 9.5 Closed-loop simulations: controllers drive the trajectory OUT of FL region
+
+§8 picks a green $x_0$ (both cert ≥ 0, far from $X_T$) and simulates both controllers with
+`scipy.solve_ivp(DOP853, rtol=1e-8, atol=1e-10, max_step=1e-4)`. Result for one
+representative `x_0 = (1.85, 1.00, 3.07, 0.39)`:
+
+| diagnostic | con (hard) | unc (vanilla) |
+|---|---|---|
+| reached target | ✓ | ✓ |
+| stayed_safe | ✗ | ✗ |
+| **min v(t)** | 0.185 | 0.391 |
+| **max v(t)** | **23.02** | **45.08** |
+| max\|u₁(t)\| | 293.7 | 41.2 |
+| max\|u₂(t)\| | 102.5 | 330 |
+| v at peak\|u₁\| | **0.185** (FL lower bound!) | 11.14 (way outside FL) |
+| % time \|u₁\| ≤ ub_demo₁ | 96.8% | 65.8% |
+| % time \|u₂\| ≤ ub_demo₂ | 44.6% | 19.6% |
+
+**Critical observation:** the FL region is $v \in [0.1, 1.0]$. Both closed loops drive `v`
+to **23–45** — *two orders of magnitude past the FL upper bound*. The controllers were
+synthesized only on samples inside the FL region; outside it, $u$ is unconstrained
+extrapolation of the polynomial expression, plus the `1/v` factor in $A^{-1}$ spikes
+whenever `v` returns near 0.
+
+`max|u|` is **converged** across `max_step ∈ {1e-3, 1e-4}` (291 → 293, < 1% change), so the
+spikes are **real** polynomial-extrapolation values, not step-size artifacts.
+
+**Cascade:** u₂ (acceleration) is large → `v̇ = u₂` accelerates `v` to ~45 in a few seconds
+→ trajectory leaves FL region → `u₁` enters extrapolation regime, including the `1/v`
+spike when `v` later passes back through the lower bound.
+
+The closed-loop simulation therefore **does not** stay inside the region the controller was
+designed for. `V(x) ≥ 0` was *supposed* to keep the trajectory in the RA set (which is
+inside the FL region), but `V` is a polynomial-approximate sufficient condition and the
+dense closed loop can escape.
+
+### 9.6 What this means for the paper
+
+- The §6 / §7 / §8 cumulative finding **does not soften**: even with the cleanest possible
+  per-sample slack distribution (`w=100`), the honest `ub_demo` (5.008), the strictest hard
+  SOP on the filtered "easy 80%" subset, the constrained certified region still extends
+  beyond the unconstrained one (`unexpected_frac ≈ 37%`).
+- The closed-loop simulation is *not a fair test* of "controller respects bound" because
+  the simulated trajectory leaves the controller's domain of definition (the FL region).
+  Any claim like "constrained controller stays bounded along trajectories" requires either
+  saturating `u` at execution time, restricting the simulation, or rejecting states whose
+  closed loop exits FL.
+- These are framework-level problems with the polynomial-SOS reach-avoid approach when
+  combined with a sampled input-bound SOP — they are *not* fixed by any parameter tuning
+  in this revision cycle. The §7 conclusion (pivot to MPC-level demonstration) stands.
+
 ## Open decisions
 
 - **Strict bound** (`mu ≈ 0.0068`, small reach-avoid set ~21%) vs **large set**
@@ -249,5 +454,16 @@ consistent with the input constraints", NOT "a bound-respecting feedback law".**
   `lambda` in 50x-100x `mu`)~~ — **answered (§7): no.** Pivot the input-constraint demonstration
   to the MPC level; reframe C1 as a terminal-set contribution. **(decision pending: adopt the
   MPC-level demo / reframe C1 in the manuscript.)**
+- ~~Whether a larger μ for the manipulator can fatten the set enough for k1/λ adjustment to bound
+  `|τ|`~~ — **answered (§8): no.** Larger μ does fatten the set (monotonic 54%→100%) but the
+  μ↔|τ| tradeoff is super-linear (max|τ| reaches `1e7` by μ=200), and §7's overfit wall is more
+  severe at the manipulator's `|τ|` scales than for Dubins. Keep `μ=15` as the baseline.
 - Controller files in `controllers/` are kept at the committed (paper) versions; the
   FL-region edits in the example scripts are **not yet re-exported** to controllers.
+- ~~Whether the per-sample slack SOP can deliver a controller that respects `ub` along
+  closed-loop trajectories~~ — **answered (§9): no.** Even with `slack_weight = 100`
+  (KKT-honest slack), `coverage_pct = 80` (`ub_demo ≈ ub`), filtered subset + hard SOP,
+  and `max_step = 1e-4` (converged), closed-loop drives `v` to 23–45 (FL upper bound is
+  1.0), pushing the controller into extrapolation where `1/v` spikes |u| to ~300. The SOS
+  certificate `V ≥ 0` is a polynomial-approximate sufficient condition; it does *not* in
+  practice prevent the closed loop from leaving the FL region.
