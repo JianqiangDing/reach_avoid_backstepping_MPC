@@ -5,27 +5,46 @@
   "probe": {
     "mu": 0.1,
     "xi0": 1e-08,
-    "ub": 5.0,
+    "ub_req": 5.0,
     "slack_weight": 100.0,
     "ds": 4.0,
     "dv": 4.0,
+    "seed": 42,
     "lambda": 1.09456316972482e-08,
     "delta": 152.342330461502,
     "n_samples": 250
   },
   "coverage_pct": 80,
-  "slack_threshold": 2.624731743278106,
-  "u_max_eff": 7.624731743278106,
-  "u_max_eff_over_ub_req": 1.5249463486556212,
-  "n_kept": 200,
-  "n_dropped": 50,
+  "slack_threshold": {
+    "omega": 2.7,
+    "a": 0.1
+  },
+  "u_max_eff": {
+    "omega": 7.7,
+    "a": 5.1
+  },
+  "u_max_eff_over_ub_req": {
+    "omega": 1.54,
+    "a": 1.02
+  },
+  "n_kept": 188,
+  "n_dropped": 62,
   "kept_samples_csv": "revision/data/kept_samples_dubins.csv",
   "slack_quantiles": {
-    "50": 0.0026984744941949,
-    "80": 2.624731743278106,
-    "90": 7.41900069093288,
-    "95": 13.344240498149091,
-    "99": 25.54221537228235
+    "omega": {
+      "50": 0.00269702548332955,
+      "80": 2.624731743278106,
+      "90": 7.41900069093288,
+      "95": 13.344240498149091,
+      "99": 25.54221537228235
+    },
+    "a": {
+      "50": 0.00269487771459825,
+      "80": 0.0026970892651342598,
+      "90": 0.005503625198304069,
+      "95": 1.2905248688748816,
+      "99": 2.6146515855825556
+    }
   },
-  "notes": "Per-sample slack SOP at ub_req; symmetric u_max_eff = ub_req + quantile_q(combined slack). Kept subset (combined slack <= q-quantile) feeds the Phase 1.3 hard SOP. All params set by this notebook; MATLAB solver may report approximate (near-boundary) status \u2014 slacks used for bound selection only."
+  "notes": "Per-sample, per-channel slack SOP at the symmetric bound ub_req; kept subset chosen by the combined relative slack rho = max(s_omega, s_a)/ub_req <= q-quantile. Per-channel u_max_eff_i = ub_req + max(slack_i) over the kept subset feeds the Phase 1.3 hard SOP. MATLAB solver may report approximate (near-boundary) status; slacks used for bound selection only."
 }

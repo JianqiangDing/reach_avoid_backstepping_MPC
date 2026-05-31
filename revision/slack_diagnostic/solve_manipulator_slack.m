@@ -17,7 +17,12 @@
 % revision/data/phase1_1_outputs_manipulator.json; outputs to revision/data/.
 %
 % ALL parameters are supplied by the calling notebook via environment variables
-% (this .m sets no parameter values): MU, XI0, UB1, UB2, N_VALID, SLACK_WEIGHT, DS, DV.
+% (this .m sets no parameter values):
+%   synthesis/SOP : MU, XI0, UB1, UB2, N_VALID, SLACK_WEIGHT, DS, DV
+%   sampling      : SEED
+%   system model  : M1, M2, L1, L2, LC1, LC2, I1, I2, GRAV
+% The system EOM form, output map and safe/target sets are the frozen example
+% definition (mirrored read-only in manipulator_slack_diag.ipynb §1).
 
 function solve_manipulator_slack()
     here = fileparts(mfilename('fullpath'));        % revision/slack_diagnostic
@@ -34,6 +39,13 @@ function solve_manipulator_slack()
     slack_weight = read_env_num('SLACK_WEIGHT');
     ds           = read_env_num('DS');
     dv           = read_env_num('DV');
+    seed         = read_env_num('SEED');
+    % manipulator physical constants (system model; set by the notebook)
+    m1  = read_env_num('M1');  m2  = read_env_num('M2');
+    l1  = read_env_num('L1');  l2  = read_env_num('L2');
+    lc1 = read_env_num('LC1'); lc2 = read_env_num('LC2');
+    I1  = read_env_num('I1');  I2  = read_env_num('I2');
+    g   = read_env_num('GRAV');
 
     % ---- relaxed synthesis region X_S_eff from Phase 1.1 --------------------
     j = jsondecode(fileread(fullfile(data_dir, 'phase1_1_outputs_manipulator.json')));
@@ -46,11 +58,15 @@ function solve_manipulator_slack()
     fprintf('    lower = [%s]\n    upper = [%s]   (x5 = x1 + x2)\n', ...
         strtrim(sprintf('%.4g ', box_lo)), strtrim(sprintf('%.4g ', box_hi)));
 
+    % ---- stage timers (so the notebook's live stream shows progress) --------
+    t_all = tic; t_stage = tic;
+    fprintf('[stage] building symbolic manipulator dynamics (inv(M), simplify) ...\n');
+
     % ---- manipulator system (5-D augmented; x5 independent symbol) ----------
+    % EOM form is the frozen example; physical constants come from the notebook.
     syms x1 x2 x3 x4 x5 y1 y2;
     x_vars = [x1; x2; x3; x4; x5];
     y_vars = [y1; y2];
-    m1 = 1.0; m2 = 1.0; l1 = 4.0; l2 = 4.0; lc1 = 2.0; lc2 = 2.0; I1 = 0.02; I2 = 0.02; g = 9.81;
     M11 = I1 + I2 + m1 * lc1^2 + m2 * (l1^2 + lc2^2 + 2 * l1 * lc2 * cos(x2));
     M12 = m2 * (lc2^2 + l1 * lc2 * cos(x2)) + I2;
     M22 = m2 * lc2^2 + I2;
@@ -67,18 +83,22 @@ function solve_manipulator_slack()
     safe_set = -((4 * (y1 - 2) - 2 * y2^3)^2) + 0.8 * y2^3 + 10;
     target_set = ((y1 - 2 - 3.5)^2 / 1.2^2) + ((y2 - 1.8)^2 / 0.4^2) - 2;
 
+    fprintf('[stage] symbolic build done in %.1fs; running backstepping reach_avoid_controller ...\n', toc(t_stage)); t_stage = tic;
     [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, ~, ~, ~, p, r_deg] = ...
         reach_avoid_controller(fx_sym, gx_sym, hx_sym, x_vars, y_vars, safe_set);
 
+    fprintf('[stage] backstepping design done in %.1fs; solving vanilla k1 (SOS, dv=%d ds=%d) ...\n', toc(t_stage), dv, ds); t_stage = tic;
     [k1_y, k1_lambda, ~] = solve_vanilla_k1_controller_xi(y_vars, safe_set, target_set, dv, ds, xi0);
+    fprintf('[stage] vanilla k1 done in %.1fs (lambda=%.4g); sampling %d valid reach-avoid states ...\n', toc(t_stage), k1_lambda, n_valid); t_stage = tic;
 
     % ---- sample n_valid reach-avoid states ON THE MANIFOLD x5 = x1 + x2 -----
     cert_vanilla = sub_lambda(sub_mu(subs(subs(certificate, k1, k1_y), y_vars, hx_sym), mu, mu_val), lambda, k1_lambda);
-    rng(42);
+    rng(seed);
     x_samples_valid = manifold_sample(n_valid, x_vars, y_vars, hx_sym, safe_set, target_set, ...
         cert_vanilla, box_lo, box_hi);
     valid_count = size(x_samples_valid, 2);
-    fprintf('  sampled %d valid reach-avoid states on the manifold\n', valid_count);
+    fprintf('[stage] sampled %d valid states in %.1fs; assembling + solving per-sample slack SOP (%d samples x 2 channels = %d slacks; the long MOSEK solve) ...\n', ...
+        valid_count, toc(t_stage), valid_count, 2 * valid_count); t_stage = tic;
 
     % ---- per-sample slack SOP -----------------------------------------------
     lb = [-ub1; -ub2]; ub = [ub1; ub2];
@@ -88,6 +108,7 @@ function solve_manipulator_slack()
             ux_for_sop, k1, J_k1, cert_term_dict, p, r_deg, ...
             x_vars, y_vars, hx_sym, safe_set, target_set, x_samples_valid, ...
             lb, ub, ds, dv, k1_lambda, mu_val, slack_weight);
+    fprintf('[stage] per-sample slack SOP done in %.1fs (total elapsed %.1fs)\n', toc(t_stage), toc(t_all));
 
     % ---- write per-sample slack CSV -----------------------------------------
     sample_idx = (1:valid_count)';
@@ -99,11 +120,14 @@ function solve_manipulator_slack()
     writetable(T_ps, ps_path);
     fprintf('  wrote %s  (%d rows)\n', ps_path, valid_count);
 
-    % ---- meta CSV -----------------------------------------------------------
+    % ---- meta CSV (probe params + sampling seed + system constants) ---------
     T = table(mu_val, xi0, ub1, ub2, valid_count, slack_weight, k1_lambda, k1_delta, ds, dv, ...
+        seed, m1, m2, l1, l2, lc1, lc2, I1, I2, g, ...
         slack_max(1), slack_max(2), ...
         'VariableNames', {'mu', 'xi0', 'ub1_req', 'ub2_req', 'n_valid_samples', 'slack_weight', ...
-                          'lambda', 'delta', 'ds', 'dv', 'slack1_max', 'slack2_max'});
+                          'lambda', 'delta', 'ds', 'dv', ...
+                          'seed', 'm1', 'm2', 'l1', 'l2', 'lc1', 'lc2', 'I1', 'I2', 'g', ...
+                          'slack1_max', 'slack2_max'});
     meta_path = fullfile(data_dir, 'slack_meta_manipulator.csv');
     writetable(T, meta_path);
     fprintf('  wrote %s\n', meta_path);

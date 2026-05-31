@@ -1,0 +1,64 @@
+{
+  "phase": "1.2",
+  "example": "manipulator",
+  "self_contained": true,
+  "probe": {
+    "mu": 15.0,
+    "xi0": 1e-08,
+    "ub_req": {
+      "tau1": 500.0,
+      "tau2": 500.0
+    },
+    "slack_weight": 100.0,
+    "ds": 4.0,
+    "dv": 2.0,
+    "seed": 42,
+    "lambda": 1.87185609940563e-07,
+    "delta": 2520.23576242176,
+    "n_samples": 250
+  },
+  "system_constants": {
+    "m1": 1.0,
+    "m2": 1.0,
+    "l1": 4.0,
+    "l2": 4.0,
+    "lc1": 2.0,
+    "lc2": 2.0,
+    "I1": 0.02,
+    "I2": 0.02,
+    "g": 9.81
+  },
+  "coverage_pct": 80,
+  "slack_threshold": {
+    "tau1": 179.2,
+    "tau2": 0.1
+  },
+  "u_max_eff": {
+    "tau1": 679.2,
+    "tau2": 500.1
+  },
+  "u_max_eff_over_ub_req": {
+    "tau1": 1.3584,
+    "tau2": 1.0002
+  },
+  "n_kept": 197,
+  "n_dropped": 53,
+  "kept_samples_csv": "revision/data/kept_samples_manipulator.csv",
+  "slack_quantiles": {
+    "tau1": {
+      "50": 3.579041633707555e-07,
+      "80": 179.182112455868,
+      "90": 532.4749584365159,
+      "95": 1079.6158321795033,
+      "99": 2228.2685911989192
+    },
+    "tau2": {
+      "50": 3.0980581646819853e-07,
+      "80": 3.77695643159616e-07,
+      "90": 4.2475189787558017e-07,
+      "95": 6.35631175958827,
+      "99": 107.24762337517825
+    }
+  },
+  "notes": "Per-sample, per-channel slack SOP at (ub1_req, ub2_req); kept subset chosen by the combined RELATIVE slack rho = max(s1/ub1, s2/ub2) <= q-quantile, since the two torque channels are on different scales. Per-channel u_max_eff_i = ub_i_req + max(slack_i) over the kept subset feeds the Phase 1.3 hard SOP. All parameters (incl. seed and the manipulator physical constants) are set by this notebook. MATLAB solver may report approximate (near-boundary) status; slacks used for bound selection only."
+}

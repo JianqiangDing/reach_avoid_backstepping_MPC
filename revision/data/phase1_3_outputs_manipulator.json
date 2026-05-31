@@ -1,0 +1,29 @@
+{
+  "phase": "1.3",
+  "example": "manipulator",
+  "controller_py": "revision/controllers/manipulator_clean.py",
+  "u_max_eff": {
+    "tau1": 679.2,
+    "tau2": 500.1
+  },
+  "bound_realized": false,
+  "ra_fraction_of_safe_outside_target": 0.7588357588357588,
+  "rollout": {
+    "x0": [
+      -2.4524861804964635,
+      2.749872782055109,
+      0.16981715452584678,
+      0.2824420104227454
+    ],
+    "reached": true,
+    "stayed_safe": true,
+    "within_bounds": true,
+    "stop_reason": "reached_target",
+    "max_abs_u": {
+      "tau1": 676.7837040522322,
+      "tau2": 298.7135939859159
+    }
+  },
+  "verdict": "REVIEW",
+  "notes": "Phase 1.3 hard-SOP controller over the Phase 1.2 kept set. Bound check is over a dense independent sample of the reach-avoid set; rollout is one representative closed-form trajectory. The exported controller .py + u_max_eff + X_S_eff box are the Phase 2 interface."
+}

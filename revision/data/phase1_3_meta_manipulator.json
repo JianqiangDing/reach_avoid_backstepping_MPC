@@ -1,0 +1,15 @@
+{
+  "example": "manipulator",
+  "controller_py": "revision/controllers/manipulator_clean.py",
+  "u_max_eff": {
+    "tau1": 679.2,
+    "tau2": 500.1
+  },
+  "mu": 15,
+  "ds": 4,
+  "dv": 2,
+  "n_samples": 197,
+  "k1_delta": 305.21482922616212,
+  "k1_lambda": 1.8718560994056288E-7,
+  "wallclock_s": 96.597228708333333
+}
