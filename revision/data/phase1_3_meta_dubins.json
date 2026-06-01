@@ -1,15 +1,17 @@
 {
   "example": "dubins",
-  "controller_py": "revision/controllers/dubins_clean.py",
+  "controller_constrained_py": "revision/controllers/dubins_constrained.py",
+  "controller_unconstrained_py": "revision/controllers/dubins_unconstrained.py",
   "u_max_eff": {
     "omega": 7.7,
     "a": 5.1
   },
   "mu": 0.1,
+  "xi0": 1E-8,
   "ds": 4,
   "dv": 4,
   "n_samples": 188,
   "k1_delta": 38.375988404661896,
   "k1_lambda": 1.0843559921664242E-8,
-  "wallclock_s": 49.737904375
+  "wallclock_s": 50.018213333333335
 }

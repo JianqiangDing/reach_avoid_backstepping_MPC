@@ -19,9 +19,12 @@ k1_opt = [
 
 # Parameters
 # example = 'manipulator'
+# controller_type = 'constrained_hard_sop'
 # u_max_eff = [679.2;500.1]
 # mu_val = 15
+# xi0 = 1e-08
 # ds = 4
 # dv = 2
 # n_samples = 197
 # k1_delta = 305.214829226162
+# lambda = 1.87185609940563e-07

@@ -1,14 +1,20 @@
-% Phase 1.3 -- manipulator final controller synthesis (HARD bounded SOP, no slack).
+% Phase 1.3 -- manipulator controller synthesis: constrained + unconstrained.
 %
-% Counterpart of solve_dubins_clean.m. Reads the Phase 1.2 outputs (per-channel
-% effective bound u_max_eff = [tau1, tau2], kept samples S_filtered, mu/ds/dv and
-% the physical constants), re-solves the bounded-control SOP with HARD per-channel
-% torque limits over S_filtered, and exports the controller + certificate to
-% revision/controllers/manipulator_clean.py. The 5-D augmented synthesis state
-% x = [q1,q2,dq1,dq2,q1+q2] is collapsed (x5 = x1+x2) to a 4-D export, as in the
-% main example_manipulator.m.
+% Counterpart of solve_dubins.m. At the SAME settings (from the Phase 1.2 outputs:
+% per-channel u_max_eff = [tau1, tau2], kept samples S_filtered, mu/ds/dv, physical
+% constants), synthesizes TWO controllers for later comparison:
+%   * CONSTRAINED   -- hard bounded-control SOP over S_filtered (per-channel torque
+%                      limits enforced).
+%   * UNCONSTRAINED -- vanilla k1 at the same lambda, NO per-sample bound
+%                      constraints (baseline reach-avoid law ignoring torque limits).
+%
+% Exports (revision/controllers/):
+%   manipulator_constrained.py     u_opt + certificate (bounded)
+%   manipulator_unconstrained.py   u_opt + certificate (vanilla, unbounded)
+% The 5-D augmented synthesis state x = [q1,q2,dq1,dq2,q1+q2] is collapsed
+% (x5 = x1+x2) to a 4-D export for both, as in the main example_manipulator.m.
 
-function solve_manipulator_clean()
+function solve_manipulator()
     here = fileparts(mfilename('fullpath'));        % revision/controller_synthesis
     revision_dir = fileparts(here);                 % revision
     addpath(fullfile(revision_dir, 'matlab_frozen'));
@@ -27,7 +33,7 @@ function solve_manipulator_clean()
     ub1    = p12.u_max_eff.tau1;
     ub2    = p12.u_max_eff.tau2;
     c      = p12.system_constants;   % m1 m2 l1 l2 lc1 lc2 I1 I2 g
-    fprintf('solve_manipulator_clean: mu=%g xi0=%g ds=%d dv=%d  u_max_eff=[tau1 %.4g, tau2 %.4g]\n', ...
+    fprintf('solve_manipulator: mu=%g xi0=%g ds=%d dv=%d  u_max_eff=[tau1 %.4g, tau2 %.4g]\n', ...
         mu_val, xi0, ds, dv, ub1, ub2);
 
     % ---- kept samples S_filtered from Phase 1.2 (5-D on manifold) ------------
@@ -61,12 +67,25 @@ function solve_manipulator_clean()
     fprintf('[stage] building symbolic manipulator dynamics done; running backstepping ...\n');
     [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, ~, ~, ~, p, r_deg] = ...
         reach_avoid_controller(fx_sym, gx_sym, hx_sym, x_vars, y_vars, safe_set);
-    fprintf('[stage] backstepping design done in %.1fs; solving vanilla k1 (for lambda) ...\n', toc(t_stage)); t_stage = tic;
-    [~, k1_lambda, ~] = solve_vanilla_k1_controller_xi(y_vars, safe_set, target_set, dv, ds, xi0);
-    fprintf('[stage] vanilla k1 done in %.1fs (lambda=%.4g); solving HARD bounded SOP over %d samples ...\n', ...
-        toc(t_stage), k1_lambda, n_samples); t_stage = tic;
+    fprintf('[stage] backstepping design done in %.1fs; solving vanilla k1 ...\n', toc(t_stage)); t_stage = tic;
+    [k1_y, k1_lambda, ~] = solve_vanilla_k1_controller_xi(y_vars, safe_set, target_set, dv, ds, xi0);
+    J_k1_y = jacobian(k1_y, y_vars);
+    fprintf('[stage] vanilla k1 done in %.1fs (lambda=%.4g)\n', toc(t_stage), k1_lambda);
 
-    % ---- HARD bounded-control SOP (no slack) --------------------------------
+    % ---- UNCONSTRAINED controller (vanilla k1, NO per-sample bound constraints)
+    u_unc = subs(subs(subs(u, k1, k1_y), J_k1, J_k1_y), y_vars, hx_sym);
+    u_unc = sub_lambda(sub_mu(u_unc, mu, mu_val), lambda, k1_lambda);
+    u_unc = subs(u_unc, x5, x1 + x2);
+    cert_unc = sub_lambda(sub_mu(subs(subs(certificate, k1, k1_y), y_vars, hx_sym), mu, mu_val), lambda, k1_lambda);
+    cert_unc = subs(cert_unc, x5, x1 + x2);
+    params_unc = struct('example', 'manipulator', 'controller_type', 'unconstrained_vanilla', ...
+        'mu_val', mu_val, 'xi0', xi0, 'ds', ds, 'dv', dv, 'lambda', k1_lambda);
+    unc_path = fullfile(ctrl_dir, 'manipulator_unconstrained.py');
+    export_to_python(u_unc, cert_unc, k1_y, params_unc, unc_path);
+    fprintf('  exported %s\n', unc_path);
+
+    % ---- CONSTRAINED controller (HARD bounded-control SOP, no slack) --------
+    fprintf('[stage] solving HARD bounded SOP over %d samples ...\n', n_samples); t_stage = tic;
     lb = [-ub1; -ub2]; ub = [ub1; ub2];
     ux_for_sop = sub_lambda(sub_mu(subs(u, y_vars, hx_sym), mu, mu_val), lambda, k1_lambda);
     [k1_opt, J_k1_opt, k1_delta] = solve_k1_controller_sop( ...
@@ -75,41 +94,29 @@ function solve_manipulator_clean()
         lb, ub, ds, dv, k1_lambda, mu_val);
     fprintf('[stage] hard SOP done in %.1fs (delta=%.4g)\n', toc(t_stage), k1_delta);
 
-    % ---- assemble final controller + certificate, collapse x5 = x1 + x2 ------
-    u_opt = subs(u, k1, k1_opt);
-    u_opt = subs(u_opt, J_k1, J_k1_opt);
-    u_opt = subs(u_opt, y_vars, hx_sym);
-    u_opt = sub_lambda(sub_mu(u_opt, mu, mu_val), lambda, k1_lambda);
-    u_opt = subs(u_opt, x5, x1 + x2);
-
-    certificate_opt = subs(certificate, k1, k1_opt);
-    certificate_opt = subs(certificate_opt, y_vars, hx_sym);
-    certificate_opt = sub_lambda(sub_mu(certificate_opt, mu, mu_val), lambda, k1_lambda);
-    certificate_opt = subs(certificate_opt, x5, x1 + x2);
-
-    % ---- export to revision/controllers/ ------------------------------------
-    params = struct();
-    params.example = 'manipulator';
-    params.u_max_eff = [ub1; ub2];
-    params.mu_val = mu_val;
-    params.ds = ds;
-    params.dv = dv;
-    params.n_samples = n_samples;
-    params.k1_delta = k1_delta;
-    py_path = fullfile(ctrl_dir, 'manipulator_clean.py');
-    export_to_python(u_opt, certificate_opt, k1_opt, params, py_path);
-    fprintf('  exported %s\n', py_path);
+    u_con = subs(subs(subs(u, k1, k1_opt), J_k1, J_k1_opt), y_vars, hx_sym);
+    u_con = sub_lambda(sub_mu(u_con, mu, mu_val), lambda, k1_lambda);
+    u_con = subs(u_con, x5, x1 + x2);
+    cert_con = sub_lambda(sub_mu(subs(subs(certificate, k1, k1_opt), y_vars, hx_sym), mu, mu_val), lambda, k1_lambda);
+    cert_con = subs(cert_con, x5, x1 + x2);
+    params_con = struct('example', 'manipulator', 'controller_type', 'constrained_hard_sop', ...
+        'u_max_eff', [ub1; ub2], 'mu_val', mu_val, 'xi0', xi0, 'ds', ds, 'dv', dv, ...
+        'n_samples', n_samples, 'k1_delta', k1_delta, 'lambda', k1_lambda);
+    con_path = fullfile(ctrl_dir, 'manipulator_constrained.py');
+    export_to_python(u_con, cert_con, k1_opt, params_con, con_path);
+    fprintf('  exported %s\n', con_path);
 
     % ---- Phase 1.3 synthesis meta -------------------------------------------
     meta = struct('example', 'manipulator', ...
-        'controller_py', fullfile('revision', 'controllers', 'manipulator_clean.py'), ...
+        'controller_constrained_py',   fullfile('revision', 'controllers', 'manipulator_constrained.py'), ...
+        'controller_unconstrained_py', fullfile('revision', 'controllers', 'manipulator_unconstrained.py'), ...
         'u_max_eff', struct('tau1', ub1, 'tau2', ub2), ...
-        'mu', mu_val, 'ds', ds, 'dv', dv, 'n_samples', n_samples, ...
+        'mu', mu_val, 'xi0', xi0, 'ds', ds, 'dv', dv, 'n_samples', n_samples, ...
         'k1_delta', k1_delta, 'k1_lambda', k1_lambda, 'wallclock_s', toc(t_all));
     fid = fopen(fullfile(data_dir, 'phase1_3_meta_manipulator.json'), 'w');
     fwrite(fid, jsonencode(meta, 'PrettyPrint', true));
     fclose(fid);
-    fprintf('solve_manipulator_clean: done in %.1fs (delta=%.4g, %d samples)\n', toc(t_all), k1_delta, n_samples);
+    fprintf('solve_manipulator: done in %.1fs (delta=%.4g, %d samples)\n', toc(t_all), k1_delta, n_samples);
 end
 
 % =============================================================================

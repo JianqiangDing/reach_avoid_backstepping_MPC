@@ -19,9 +19,12 @@ k1_opt = [
 
 # Parameters
 # example = 'dubins'
+# controller_type = 'constrained_hard_sop'
 # u_max_eff = [7.7;5.1]
 # mu_val = 0.1
+# xi0 = 1e-08
 # ds = 4
 # dv = 4
 # n_samples = 188
 # k1_delta = 38.3759884046619
+# lambda = 1.08435599216642e-08

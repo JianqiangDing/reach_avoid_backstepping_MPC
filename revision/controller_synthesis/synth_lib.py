@@ -9,7 +9,7 @@ Pure functions used by dubins_synth.ipynb / manipulator_synth.ipynb to:
 
 The reach-avoid set used everywhere is the certificate zero-superlevel set
 { x : V(x) >= 0 }; the controller and certificate come from the MATLAB export
-(revision/controllers/<example>_clean.py).
+(revision/controllers/<example>_constrained.py / <example>_unconstrained.py).
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import sympy as sp
 
 # ----------------------------------------------------------------------------
 # Frozen example definitions (state symbols, dynamics, output map, sets).
-# These mirror solve_*_clean.m / python systems exactly; the controller and the
+# These mirror solve_<example>.m / python systems exactly; the controller and the
 # synthesis box (X_S_eff) are supplied separately by the notebook.
 # ----------------------------------------------------------------------------
 def dubins_system():
