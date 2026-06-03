@@ -8,7 +8,7 @@
     "a": 5.1
   },
   "bound_realized": false,
-  "ra_fraction_of_safe_outside_target": 0.8795590477307377,
+  "ra_fraction_of_safe_outside_target": 0.8779172041749737,
   "rollout": {
     "x0": [
       1.8198346605925697,
@@ -21,8 +21,8 @@
     "within_bounds": true,
     "stop_reason": "reached_target",
     "max_abs_u": {
-      "omega": 6.774761919130045,
-      "a": 3.599729211178237
+      "omega": 6.730609468405409,
+      "a": 3.5733519735521613
     }
   },
   "verdict": "REVIEW",
@@ -30,8 +30,8 @@
     "reached": true,
     "stayed_safe": true,
     "max_abs_u": {
-      "omega": 17.33959993105197,
-      "a": 3.641383242925182
+      "omega": 17.339591543404083,
+      "a": 3.6413828646686284
     }
   },
   "notes": "Phase 1.3 synthesizes BOTH a constrained hard-SOP controller and an unconstrained vanilla-k1 baseline at the same settings. The bound gate + rollout verdict refer to the constrained controller; the unconstrained one is the comparison baseline. The constrained .py + u_max_eff + X_S_eff box are the Phase 2 interface."

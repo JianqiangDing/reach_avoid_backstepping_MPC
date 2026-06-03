@@ -1,2 +1,2 @@
-mu,xi0,ub_req,n_valid_samples,slack_weight,ds,dv,lambda,delta,slack1_max,slack2_max
-0.1,1e-08,5,250,100,4,4,1.09456316972482e-08,152.342330461502,32.9338256115286,3.21067744018047
+mu,xi0,ub_req,n_valid_samples,slack_weight,ds,dv,lambda,delta,seed,slack1_max,slack2_max
+0.1,1e-08,5,250,100,4,4,1.09456316972482e-08,152.342330461502,42,32.9338256115286,3.21067744018047
