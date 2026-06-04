@@ -29,6 +29,8 @@ alpha = 1e-3 * (-target_set_sym + 300);
 safe_set_sym = alpha * h_raw; % h(y): zsafe_set >= 0 inside safe set
 
 % synthesize the reach-avoid backstepping controller with bounded control inputs (symbolic)
+% t_total wraps the whole synthesis pipeline; the per-stage __TIMING__ markers sum to ~this total.
+t_total = tic;
 t_design = tic;
 [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vector, ks, p, r_deg] = reach_avoid_controller(fx_sym, gx_sym, hx_sym, x_vars_sym, y_vars_sym, safe_set_sym);
 fprintf('__TIMING__,%s,design,%.6f\n', mfilename, toc(t_design));
@@ -64,8 +66,10 @@ fprintf('__TIMING__,%s,sop_solve,%.6f\n', mfilename, toc(t_solve));
 % [num_1, den_1] = numden(u_opt(1));
 % [lb_1, ub_1] = compute_poly_bounds_sos(num_1, den_1, certificate_opt, ds, 1e-3);
 % estimate the bounds of the obtained controller over zero superlevel set of the certificate using sampling (for verification)
+t_bounds = tic;
 [estimated_lb_1, estimated_ub_1] = compute_poly_bounds_sampling(x_vars_sym, u_opt(1), certificate_opt, 10000, bound_min, bound_max);
 [estimated_lb_2, estimated_ub_2] = compute_poly_bounds_sampling(x_vars_sym, u_opt(2), certificate_opt, 10000, bound_min, bound_max);
+fprintf('__TIMING__,%s,bounds_estimation,%.6f\n', mfilename, toc(t_bounds));
 
 disp('------------------------------------------------------------------------------------');
 
@@ -108,5 +112,10 @@ params_for_export.valid_count = valid_count;
 params_for_export.bound_min = bound_min;
 params_for_export.bound_max = bound_max;
 
+t_export = tic;
 export_to_python(u_opt, certificate_opt, k1_opt, params_for_export, 'sop_bounded_control_dubins_car_result.py');
+fprintf('__TIMING__,%s,result_export,%.6f\n', mfilename, toc(t_export));
 % export the computed controller and certificate to a python file for verification and testing
+
+% Total wall time for the whole synthesis pipeline (design through result export).
+fprintf('__TIMING__,%s,total,%.6f\n', mfilename, toc(t_total));

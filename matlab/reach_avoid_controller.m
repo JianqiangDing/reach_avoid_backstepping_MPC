@@ -1,6 +1,6 @@
 % function for reach-avoid controller synthesis using backstepping
 
-function [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vector, ks, p, r_deg] = reach_avoid_controller(fx, gx, hx, x_vars, y_vars, safe_set)
+function [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vector, ks, p, r_deg, delta] = reach_avoid_controller(fx, gx, hx, x_vars, y_vars, safe_set)
     % documentation for the function
     % This function synthesizes a reach-avoid controller using backstepping technique.
     % It takes system dynamics, safe set definitions, and target sets as inputs,
@@ -19,13 +19,17 @@ function [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vect
     % J_k1: Jacobian of k1 w.r.t. y (symbolic, p x p)
     % mu: cell array of mu parameter vectors, mu{i} contains [mu_i_1; mu_i_2; ...] for output i
     % lambda: lambda parameter for backstepping
-    % certificate: reach-avoid certificate function
+    % certificate: reach-avoid certificate function, shifted by -delta/lambda so that
+    %              the certified reach-avoid set is {certificate >= 0}; cert_term_dict
+    %              below is left UNSHIFTED so the downstream SOS program is unchanged
     % A_matrix: A(x) matrix for backstepping
     % b_vector: b(x) vector for backstepping
     % ks: cell array of auxiliary controllers for each output
     % cert_term_dict: dictionary of terms in the reach-avoid certificate
     % p: number of outputs
     % r_deg: vector of relative degrees for each output
+    % delta: symbolic delta scalar appearing in the -delta/lambda certificate shift;
+    %        callers substitute the solved delta value into the exported certificate
 
     % compute the vector relative degree of the system and cache Lie derivatives
     % Lfh{i} = {h_i, Lf h_i, ..., Lf^{r_i} h_i}
@@ -54,6 +58,10 @@ function [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vect
     % declare the scale variable lambda for backstepping
     lambda = sym('lambda', 'real');
 
+    % declare the delta scalar for the -delta/lambda reach-avoid certificate shift;
+    % delta stays symbolic here and is substituted with the solved value by the caller
+    delta = sym('delta', 'real');
+
     % initialize the Dy_psi matrix, which is the partial derivative of the safety contraint function psi(y) w.r.t. y
     Dy_psi = jacobian(safe_set, y_vars);
     Dy_psi = subs(Dy_psi, y_vars, hx); % substitute y with h(x) to get Dy_psi as a function of x
@@ -78,8 +86,14 @@ function [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vect
     % compute the control input u = A^{-1} * b
     u = A_matrix \ b_vector;
 
-    % Compute reach-avoid certificate
+    % Compute reach-avoid certificate (V = safe_set - backstepping terms). cert_term_dict
+    % captures the UNSHIFTED Schur-complement terms used by the SOS program downstream.
     [certificate, cert_term_dict] = compute_reach_avoid_certificate(safe_set, ks, mu, r_deg, Lfh, p);
+
+    % Shift the returned certificate by -delta/lambda so the certified reach-avoid set is
+    % {certificate >= 0}. Only the scalar certificate is shifted; cert_term_dict is left
+    % untouched, so the optimization (which uses cert_term_dict) is unchanged.
+    certificate = certificate - delta / lambda;
 
     % Debug output
     % disp('=== A(x) matrix ===');

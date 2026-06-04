@@ -30,8 +30,20 @@ function [ux_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_contr
         uncon_export_name = 'sop_bounded_control_unconstrained_controller.py';
     end
 
-    [k1_y, k1_lambda, k1_delta] = solve_vanilla_k1_controller(y_vars, safe_set, target_set, dv, ds);
+    % Symbol used by reach_avoid_controller for the -delta/lambda certificate shift.
+    % The incoming certificate carries this free symbol; we substitute the solved delta
+    % below (0 for sampling, k1_delta for the unconstrained export, k1_delta_opt for the
+    % constrained result) so every exported certificate is free of the delta symbol.
+    delta_sym = sym('delta', 'real');
 
+    % Stage timing: each major stage is wrapped in tic/toc and reported via a
+    % __TIMING__,<script>,<phase>,<seconds> marker (collected by python/matlab_runner.py
+    % parse_timings and embedded into the exported .py by the synthesis notebook).
+    t_stage = tic;
+    [k1_y, k1_lambda, k1_delta] = solve_vanilla_k1_controller(y_vars, safe_set, target_set, dv, ds);
+    fprintf('__TIMING__,%s,vanilla_solve,%.6f\n', mfilename, toc(t_stage));
+
+    t_stage = tic;
     % compute the Jacobian of k1 w.r.t. y
     J_k1_y = jacobian(k1_y, y_vars);
 
@@ -43,7 +55,11 @@ function [ux_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_contr
     certificate_subs = substitute_mu_lambda(certificate_subs, mu, lambda, mu_val, k1_lambda); % use the computed value from the vanilla k1 controller design as the lambda value for solving the bounded control inputs
 
     % sample some random samples from the state space that satisfy the safe set, target set constraint and certificate constraint
-    x_samples = get_random_samples(samples_num, x_vars, y_vars, hx, safe_set, target_set, certificate_subs, bound_min, bound_max);
+    % Sample against the certified vanilla reach-avoid funnel {V - k1_delta/k1_lambda >= 0}
+    % by substituting the solved vanilla delta into the certificate (x5, if present, is kept
+    % as a genuine state variable for sampling; it is only back-substituted for the export).
+    certificate_sampling = subs(certificate_subs, delta_sym, k1_delta);
+    x_samples = get_random_samples(samples_num, x_vars, y_vars, hx, safe_set, target_set, certificate_sampling, bound_min, bound_max);
 
     % substitute the obtained k1 controller and output mapping into the original controller expression to get pseudo ux for scenario optimization programming
     ux_pseudo = subs(ux, k1_sym, k1_y);
@@ -53,7 +69,9 @@ function [ux_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_contr
     % also substitute the obtained mu_val and lambda_val into the original controller expression
 
     ux_pseudo = substitute_mu_lambda(ux_pseudo, mu, lambda, mu_val, k1_lambda); % use the computed value from the vanilla k1 controller design as the lambda value for solving the bounded control inputs
+    fprintf('__TIMING__,%s,sampling,%.6f\n', mfilename, toc(t_stage));
 
+    t_stage = tic;
     % ── Export the unconstrained controller + certificate ────────────────────
     % NOTE: not debug — this export is intentional and load-bearing. The file
     % sop_bounded_control_unconstrained_controller_*.py is imported by the
@@ -69,6 +87,10 @@ function [ux_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_contr
         certificate_exp = subs(certificate_exp, sym('x5'), sym('x1') + sym('x2'));
     end
 
+    % Substitute the solved vanilla delta so the exported unconstrained certificate
+    % carries the numeric -delta/lambda shift (no free delta symbol remains).
+    certificate_exp = subs(certificate_exp, delta_sym, k1_delta);
+
     params_for_export = struct();
     params_for_export.lb = lb;
     params_for_export.ub = ub;
@@ -76,8 +98,10 @@ function [ux_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_contr
     params_for_export.ds = ds;
     params_for_export.dv = dv;
     export_to_python(ux_pseudo_exp, certificate_exp, k1_y, params_for_export, uncon_export_name);
+    fprintf('__TIMING__,%s,uncon_export,%.6f\n', mfilename, toc(t_stage));
     % ─────────────────────────────────────────────────────────────────────────
 
+    t_stage = tic;
     % select the samples that satisfy the control input bounds for the pseudo ux
 
     % convert the samples to a format that can be substituted into the symbolic expression (each column is a sample)
@@ -101,7 +125,9 @@ function [ux_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_contr
     % then we can use the valid samples to solve the scenario optimization programming (SOP) with SOS constraints to find a feasible k1 controller
     [k1_opt, J_k1_opt, k1_delta_opt] = solve_k1_controller_sop(ux_for_sop, k1_sym, J_k1_sym, cert_term_dict, p, r_deg, x_vars, y_vars, ...
         hx, safe_set, target_set, x_samples_valid, lb, ub, ds, dv, k1_lambda, mu_val);
+    fprintf('__TIMING__,%s,sop_k1_solve,%.6f\n', mfilename, toc(t_stage));
 
+    t_stage = tic;
     % substitute the obtainted k1 controller into the original controller expression ux to get the final controller with bounded control inputs
     ux_opt = subs(ux, k1_sym, k1_opt);
     ux_opt = subs(ux_opt, J_k1_sym, J_k1_opt);
@@ -114,6 +140,10 @@ function [ux_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_contr
     certificate_opt = subs(certificate_opt, y_vars, hx);
 
     certificate_opt = substitute_mu_lambda(certificate_opt, mu, lambda, mu_val, k1_lambda); % use the computed value from the SOP design as the lambda value for the final certificate expression
+
+    % Substitute the solved constrained-SOP delta so the final/exported certificate
+    % carries the numeric -delta/lambda shift (no free delta symbol remains).
+    certificate_opt = subs(certificate_opt, delta_sym, k1_delta_opt);
 
     % DEBUG
     % check the corresponding certificate value & ux value for the sampled valid states
@@ -130,6 +160,7 @@ function [ux_opt, certificate_opt, valid_count, k1_opt] = solvesop_bounded_contr
     fprintf('Final Controller Report: %d Valid Certificate / %d Total (%.2f%%)\n', ...
         valid_certificate_count, size(x_samples, 2), (valid_certificate_count / size(x_samples, 2)) * 100);
     % DEBUG
+    fprintf('__TIMING__,%s,final_subs,%.6f\n', mfilename, toc(t_stage));
 
 end
 

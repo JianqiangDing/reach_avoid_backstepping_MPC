@@ -67,6 +67,8 @@ safe_set_sym =- ((4 * (y1 - 2) - 2 * y2 ^ 3) ^ 2) + 0.8 * y2 ^ 3 + 10;
 target_set_sym = ((y1 - 2 - 3.5) ^ 2/1.2 ^ 2) + ((y2 - 1.8) ^ 2/0.4 ^ 2) - 2;
 
 % ── Synthesize reach-avoid backstepping controller (symbolic) ─────────────────
+% t_total wraps the whole synthesis pipeline; the per-stage __TIMING__ markers sum to ~this total.
+t_total = tic;
 t_design = tic;
 [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vector, ks, p, r_deg] = ...
     reach_avoid_controller(fx_sym, gx_sym, hx_sym, x_vars_sym, y_vars_sym, safe_set_sym);
@@ -102,7 +104,7 @@ t_solve = tic;
     u, k1, J_k1, mu, lambda, certificate, cert_term_dict, p, r_deg, ...
     x_vars_sym, y_vars_sym, hx_sym, safe_set_sym, target_set_sym, ...
     mu_val, lb, ub, ds, dv, samples_num, bound_min, bound_max, ...
-    'sop_bounded_control_acrobot_unconstrained.py');
+'sop_bounded_control_acrobot_unconstrained.py');
 fprintf('__TIMING__,%s,sop_solve,%.6f\n', mfilename, toc(t_solve));
 
 % ── Substitute x5 = x1+x2 back → 4-D expressions for Python export ───────────
@@ -120,10 +122,12 @@ gx_sym_4d = subs(gx_sym(1:4, :), x5, x1 + x2); % drop 5th row (zero anyway)
 bound_min_4d = bound_min(1:4);
 bound_max_4d = bound_max(1:4);
 
+t_bounds = tic;
 [estimated_lb_1, estimated_ub_1] = compute_poly_bounds_sampling( ...
     x_vars_4d, u_opt_4d(1), certificate_opt_4d, 10000, bound_min_4d, bound_max_4d);
 [estimated_lb_2, estimated_ub_2] = compute_poly_bounds_sampling( ...
     x_vars_4d, u_opt_4d(2), certificate_opt_4d, 10000, bound_min_4d, bound_max_4d);
+fprintf('__TIMING__,%s,bounds_estimation,%.6f\n', mfilename, toc(t_bounds));
 
 disp('------------------------------------------------------------------------------------');
 disp('Obtained controller (4-D, x5 substituted) after solving with bounded control inputs:');
@@ -156,5 +160,10 @@ params_for_export.valid_count = valid_count;
 params_for_export.bound_min = bound_min_4d;
 params_for_export.bound_max = bound_max_4d;
 
+t_export = tic;
 export_to_python(u_opt_4d, certificate_opt_4d, k1_opt, params_for_export, ...
 'sop_bounded_control_acrobot_result.py');
+fprintf('__TIMING__,%s,result_export,%.6f\n', mfilename, toc(t_export));
+
+% Total wall time for the whole synthesis pipeline (design through result export).
+fprintf('__TIMING__,%s,total,%.6f\n', mfilename, toc(t_total));
