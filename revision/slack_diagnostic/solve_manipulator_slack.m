@@ -84,15 +84,16 @@ function solve_manipulator_slack()
     target_set = ((y1 - 2 - 3.5)^2 / 1.2^2) + ((y2 - 1.8)^2 / 0.4^2) - 2;
 
     fprintf('[stage] symbolic build done in %.1fs; running backstepping reach_avoid_controller ...\n', toc(t_stage)); t_stage = tic;
-    [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, ~, ~, ~, p, r_deg] = ...
+    [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, ~, ~, ~, p, r_deg, delta] = ...
         reach_avoid_controller(fx_sym, gx_sym, hx_sym, x_vars, y_vars, safe_set);
 
     fprintf('[stage] backstepping design done in %.1fs; solving vanilla k1 (SOS, dv=%d ds=%d) ...\n', toc(t_stage), dv, ds); t_stage = tic;
-    [k1_y, k1_lambda, ~] = solve_vanilla_k1_controller_xi(y_vars, safe_set, target_set, dv, ds, xi0);
+    [k1_y, k1_lambda, k1_delta_van] = solve_vanilla_k1_controller_xi(y_vars, safe_set, target_set, dv, ds, xi0);
     fprintf('[stage] vanilla k1 done in %.1fs (lambda=%.4g); sampling %d valid reach-avoid states ...\n', toc(t_stage), k1_lambda, n_valid); t_stage = tic;
 
     % ---- sample n_valid reach-avoid states ON THE MANIFOLD x5 = x1 + x2 -----
     cert_vanilla = sub_lambda(sub_mu(subs(subs(certificate, k1, k1_y), y_vars, hx_sym), mu, mu_val), lambda, k1_lambda);
+    cert_vanilla = subs(cert_vanilla, delta, k1_delta_van);  % corrected funnel V_vanilla - delta_van/lambda
     rng(seed);
     x_samples_valid = manifold_sample(n_valid, x_vars, y_vars, hx_sym, safe_set, target_set, ...
         cert_vanilla, box_lo, box_hi);

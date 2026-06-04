@@ -1,6 +1,6 @@
 % function for reach-avoid controller synthesis using backstepping
 
-function [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vector, ks, p, r_deg] = reach_avoid_controller(fx, gx, hx, x_vars, y_vars, safe_set)
+function [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vector, ks, p, r_deg, delta] = reach_avoid_controller(fx, gx, hx, x_vars, y_vars, safe_set)
     % documentation for the function
     % This function synthesizes a reach-avoid controller using backstepping technique.
     % It takes system dynamics, safe set definitions, and target sets as inputs,
@@ -54,6 +54,14 @@ function [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vect
     % declare the scale variable lambda for backstepping
     lambda = sym('lambda', 'real');
 
+    % declare the descent-slack variable delta. The certified reach-avoid region
+    % accounts for the SOP descent slack: the true certificate is V - delta/lambda
+    % (so {V - delta/lambda >= 0} is the certified set, projecting to the output
+    % funnel {safe - delta/lambda >= 0}). delta is left symbolic here and the caller
+    % substitutes the solved value; cert_term_dict (fed to the SOP) is left UN-shifted,
+    % so the optimization is unchanged (propagate-only correction).
+    delta = sym('delta', 'real');
+
     % initialize the Dy_psi matrix, which is the partial derivative of the safety contraint function psi(y) w.r.t. y
     Dy_psi = jacobian(safe_set, y_vars);
     Dy_psi = subs(Dy_psi, y_vars, hx); % substitute y with h(x) to get Dy_psi as a function of x
@@ -80,6 +88,11 @@ function [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, A_matrix, b_vect
 
     % Compute reach-avoid certificate
     [certificate, cert_term_dict] = compute_reach_avoid_certificate(safe_set, ks, mu, r_deg, Lfh, p);
+
+    % Apply the delta/lambda correction to the RETURNED certificate only (NOT
+    % cert_term_dict): the certified reach-avoid set is {V - delta/lambda >= 0}.
+    % Callers substitute the solved delta (and lambda) when they form the cert.
+    certificate = certificate - delta / lambda;
 
     % Debug output
     % disp('=== A(x) matrix ===');

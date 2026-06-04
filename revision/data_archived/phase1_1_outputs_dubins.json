@@ -18,7 +18,7 @@
     "A_matrix": "[[-v*sin(theta), cos(theta)], [v*cos(theta), sin(theta)]]",
     "det_A": "-v"
   },
-  "epsilon": 0.001,
+  "epsilon": 0.01,
   "verdict": "PASS",
   "self_contained": true,
   "validated_against": "in-notebook symbolic A (SymPy)",

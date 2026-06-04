@@ -65,10 +65,10 @@ function solve_manipulator()
 
     t_stage = tic;
     fprintf('[stage] building symbolic manipulator dynamics done; running backstepping ...\n');
-    [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, ~, ~, ~, p, r_deg] = ...
+    [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, ~, ~, ~, p, r_deg, delta] = ...
         reach_avoid_controller(fx_sym, gx_sym, hx_sym, x_vars, y_vars, safe_set);
     fprintf('[stage] backstepping design done in %.1fs; solving vanilla k1 ...\n', toc(t_stage)); t_stage = tic;
-    [k1_y, k1_lambda, ~] = solve_vanilla_k1_controller_xi(y_vars, safe_set, target_set, dv, ds, xi0);
+    [k1_y, k1_lambda, k1_delta_van] = solve_vanilla_k1_controller_xi(y_vars, safe_set, target_set, dv, ds, xi0);
     J_k1_y = jacobian(k1_y, y_vars);
     fprintf('[stage] vanilla k1 done in %.1fs (lambda=%.4g)\n', toc(t_stage), k1_lambda);
 
@@ -77,6 +77,7 @@ function solve_manipulator()
     u_unc = sub_lambda(sub_mu(u_unc, mu, mu_val), lambda, k1_lambda);
     u_unc = subs(u_unc, x5, x1 + x2);
     cert_unc = sub_lambda(sub_mu(subs(subs(certificate, k1, k1_y), y_vars, hx_sym), mu, mu_val), lambda, k1_lambda);
+    cert_unc = subs(cert_unc, delta, k1_delta_van);  % corrected cert: V_vanilla - delta_van/lambda
     cert_unc = subs(cert_unc, x5, x1 + x2);
     params_unc = struct('example', 'manipulator', 'controller_type', 'unconstrained_vanilla', ...
         'mu_val', mu_val, 'xi0', xi0, 'ds', ds, 'dv', dv, 'lambda', k1_lambda);
@@ -98,6 +99,7 @@ function solve_manipulator()
     u_con = sub_lambda(sub_mu(u_con, mu, mu_val), lambda, k1_lambda);
     u_con = subs(u_con, x5, x1 + x2);
     cert_con = sub_lambda(sub_mu(subs(subs(certificate, k1, k1_opt), y_vars, hx_sym), mu, mu_val), lambda, k1_lambda);
+    cert_con = subs(cert_con, delta, k1_delta);  % corrected cert: V - k1_delta/lambda
     cert_con = subs(cert_con, x5, x1 + x2);
     params_con = struct('example', 'manipulator', 'controller_type', 'constrained_hard_sop', ...
         'u_max_eff', [ub1; ub2], 'mu_val', mu_val, 'xi0', xi0, 'ds', ds, 'dv', dv, ...

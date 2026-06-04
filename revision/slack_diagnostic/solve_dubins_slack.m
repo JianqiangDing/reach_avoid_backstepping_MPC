@@ -55,13 +55,17 @@ function solve_dubins_slack()
     target_set = (y2 - 0) ^ 2 + ((y1 + 1.7) / 0.5) ^ 2 - 0.4;
     safe_set = 1e-3 * (-target_set + 300) * h_raw;
 
-    [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, ~, ~, ~, p, r_deg] = ...
+    [u, k1, J_k1, mu, lambda, certificate, cert_term_dict, ~, ~, ~, p, r_deg, delta] = ...
         reach_avoid_controller(fx_sym, gx_sym, hx_sym, x_vars, y_vars, safe_set);
 
-    [k1_y, k1_lambda, ~] = solve_vanilla_k1_controller_xi(y_vars, safe_set, target_set, dv, ds, xi0);
+    [k1_y, k1_lambda, k1_delta_van] = solve_vanilla_k1_controller_xi(y_vars, safe_set, target_set, dv, ds, xi0);
 
     % ---- sample n_valid reach-avoid states over X_S_eff ---------------------
+    % certificate carries the symbolic descent slack `delta` (cert = V - delta/lambda);
+    % substitute the VANILLA delta so the reach-avoid region used for sampling is the
+    % corrected funnel {V_vanilla - delta_van/lambda >= 0}.
     cert_vanilla = sub_lambda(sub_mu(subs(subs(certificate, k1, k1_y), y_vars, hx_sym), mu, mu_val), lambda, k1_lambda);
+    cert_vanilla = subs(cert_vanilla, delta, k1_delta_van);
     rng(seed);
     x_samples_valid = sample_n_valid(n_valid, x_vars, y_vars, hx_sym, ...
         safe_set, target_set, cert_vanilla, bound_min, bound_max);
