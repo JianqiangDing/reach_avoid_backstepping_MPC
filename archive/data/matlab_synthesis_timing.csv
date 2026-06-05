@@ -1,4 +1,0 @@
-example,repeat,status,returncode,design_s,sop_solve_s,synth_s,wall_s,wall_net_s,error
-example_dubins_car,1,ok,0,0.259344,64.336725,64.596069,69.74135754600866,65.95483909902396,
-example_manipulator,1,ok,0,0.320606,92.129594,92.4502,98.1532939739991,94.3667755270144,
-example_double_integrator,1,ok,0,0.183064,9.930109,10.113173,15.746574439981487,11.960055992996786,

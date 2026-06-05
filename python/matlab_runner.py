@@ -21,7 +21,6 @@ from pathlib import Path
 DEFAULT_EXAMPLES = [
     "example_dubins_car",
     "example_manipulator",
-    "example_double_integrator",
 ]
 
 TIMING_RE = re.compile(r"__TIMING__,([^,]+),([^,]+),([0-9.eE+-]+)")

@@ -1,9 +1,0 @@
-method,dt_mpc,N_hor,n_reached,n_infeas_s1,n_infeas_mid,n_timeout,mean_ttt,worst_safety_margin,success_rate
-RA-MPC (ours),0.025,50,289,10,1,0,0.976,-0.0,96.3
-RA-MPC (ours),0.05,25,251,9,40,0,0.93,-0.0,83.7
-RA-MPC (ours),0.125,10,187,7,106,0,0.901,-0.002,62.3
-RA-MPC (ours),0.25,5,171,4,125,0,0.966,-0.101,57.0
-Vanilla MPC,0.025,50,263,36,1,0,0.928,-0.0,87.7
-Vanilla MPC,0.05,25,241,36,23,0,0.903,-0.0,80.3
-Vanilla MPC,0.125,10,169,41,90,0,0.848,-0.0029,56.3
-Vanilla MPC,0.25,5,150,39,111,0,0.898,-0.101,50.0
