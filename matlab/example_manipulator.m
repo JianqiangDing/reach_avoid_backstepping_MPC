@@ -77,12 +77,13 @@ fprintf('__TIMING__,%s,design,%.6f\n', mfilename, toc(t_design));
 % ── Optimisation parameters ───────────────────────────────────────────────────
 rng(42);
 
-% Torque bounds chosen to cover what the mu=15 reach-avoid controller actually
-% needs over the FL region (tau1 in ~[-5016,4402], tau2 in ~[-135,541]); the
-% manipulator's drift cancellation (gravity/Coriolis) dominates the magnitude,
-% so |tau|<=500 is not achievable while keeping the large reach-avoid set.
-lb = [-5500; -700]; % lower torque bounds [N·m]
-ub = [5500; 700]; % upper torque bounds [N·m]
+% Per-channel torque bounds for the bounded-control SOP. NOTE: these select the
+% funnel samples used to fit the certificate; the SOP does not constrain the
+% certificate's superlevel set to the bound region, so the realized feedback
+% torque over the certified set can still exceed these (k1-SOP limitation,
+% REVISION_NOTES.md §7). Here they match the manipulator actuator limits.
+lb = [-680; -500]; % lower torque bounds [N·m]
+ub = [680; 500]; % upper torque bounds [N·m]
 
 ds = 4; % degree of auxiliary SOS polynomials for single-integrator
 dv = 2; % degree of k1 controller polynomial
