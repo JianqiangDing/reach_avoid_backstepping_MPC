@@ -25,52 +25,61 @@ Three methods are compared across all example systems:
 
 | System                   | State dim | Inputs                                  | Notebook prefix               |
 | ------------------------ | --------- | --------------------------------------- | ----------------------------- |
-| Double integrator        | 2         | scalar $u \in [-20, 20]$                | `example_double_integrator_*` |
 | Dubins car               | 4         | angular rate $\omega$, acceleration $a$ | `example_dubins_car_*`        |
-| 2-DoF planar manipulator | 6         | joint torques $\tau_1, \tau_2$          | `example_manipulator_*`       |
+| 2-DoF planar manipulator | 4         | joint torques $\tau_1, \tau_2$          | `example_manipulator_*`       |
 
 ## Repository Structure
 
 ```
 .
-├── MATLAB synthesis
-│   ├── reach_avoid_controller.m      # Main backstepping certificate synthesis
-│   ├── solvesop_bounded_control.m    # Bounded control via SOP + SOS
-│   ├── solve_k1_controller_sop.m     # k1 controller SOP solve
-│   ├── solve_vanilla_k1_controller.m # Unconstrained (vanilla) k1 controller
-│   ├── export_to_python.m            # Export symbolic results → Python
-│   ├── example_double_integrator.m   # Double integrator
-│   ├── example_dubins_car.m          # Dubins car
-│   ├── example_manipulator.m         # 2-DoF planar manipulator
-│   └── ...                           # Utility functions (poly2sym, sym2pvar, …)
+├── README.md  reach_avoid_mpc.png  .gitignore
 │
-├── Python helpers
-│   ├── functional.py                 # Simulation utilities and color helpers
-│   └── acrobot_inverse_kinematics.py # IK solver for the 2-link manipulator
+├── matlab/                           # MATLAB synthesis pipeline (SOSTOOLS + MOSEK)
+│   ├── reach_avoid_controller.m      #   Backstepping certificate synthesis
+│   ├── solvesop_bounded_control.m    #   Bounded control via SOP + SOS
+│   ├── solve_k1_controller_sop.m     #   k1 controller SOP solve
+│   ├── solve_vanilla_k1_controller.m #   Unconstrained (vanilla) k1 controller
+│   ├── export_to_python.m            #   Export symbolic results to controllers/*.py
+│   ├── example_dubins_car.m          #   Dubins car synthesis
+│   ├── example_manipulator.m         #   2-DoF planar manipulator synthesis
+│   └── …                             #   SOS utilities (poly2sym, sym2pvar, plotPolyL, …)
 │
-├── Generated controllers (active)
-│   ├── sop_bounded_control_ex1_debug_20260314_191715.py        # double integrator no-MPC
-│   ├── sop_bounded_control_ex1_debug_20260314_213424.py        # double integrator MPC
-│   ├── sop_bounded_control_ex4_result_20260315_110901.py       # double integrator MPC (full)
-│   ├── sop_bounded_control_dubins_car_result_20260316_211504.py
-│   ├── sop_bounded_control_unconstrained_controller_20260316_211252.py
-│   ├── sop_bounded_control_acrobot_result_20260317_222858.py   # manipulator
-│   └── k1_acrobot_cdc2026.py                                   # manipulator k1 controller
+├── python/                           # Shared Python helpers
+│   ├── functional.py                 #   Simulation utilities and color helpers
+│   ├── acrobot_inverse_kinematics.py #   IK solver for the 2-link manipulator
+│   ├── systems.py                    #   System dynamics definitions
+│   └── matlab_runner.py              #   Drives the MATLAB synthesis from Python
 │
-├── Jupyter notebooks
-│   ├── example_double_integrator_no_mpc.ipynb  # Unconstrained Reach-Avoid
-│   ├── example_double_integrator_mpc.ipynb     # Reach-Avoid MPC
+├── controllers/                      # Exported controllers (imported by notebooks)
+│   ├── sop_bounded_control_dubins_car_result.py         # Dubins RA-MPC terminal set
+│   ├── sop_bounded_control_dubins_car_unconstrained.py  # Dubins unconstrained reach-avoid
+│   ├── sop_bounded_control_acrobot_result.py            # manipulator RA-MPC terminal set
+│   └── sop_bounded_control_acrobot_unconstrained.py     # manipulator unconstrained reach-avoid
+│
+├── notebooks/                        # Experiment notebooks (run from this dir)
+│   ├── synthesize_dubins_controllers.ipynb       # drive MATLAB synthesis (Dubins)
+│   ├── synthesize_manipulator_controllers.ipynb  # drive MATLAB synthesis (manipulator)
 │   ├── example_dubins_car_unconstrained_reach_avoid.ipynb   # Unconstrained Reach-Avoid
 │   ├── example_dubins_car_reach_avoid_mpc.ipynb             # Reach-Avoid MPC
 │   ├── example_dubins_car_vanilla_mpc.ipynb                 # Vanilla MPC
 │   ├── example_manipulator_unconstrained_reach_avoid.ipynb  # Unconstrained Reach-Avoid
 │   ├── example_manipulator_reach_avoid_mpc.ipynb            # Reach-Avoid MPC
-│   ├── example_manipulator_vanilla_mpc.ipynb                # Vanilla MPC
-│   └── example_manipulator_cdc2025.ipynb
+│   ├── example_manipulator_vanilla_mpc.ipynb               # Vanilla MPC
+│   ├── make_paper_figs_dubins.ipynb              # paper figures (Dubins)
+│   ├── make_paper_figs_manipulator.ipynb         # paper figures (manipulator)
+│   └── noise_robustness_dubins.ipynb             # disturbance-robustness sweep
 │
-├── generated/                        # Archived intermediate MATLAB exports (git-ignored)
-└── .gitignore
+├── figures/                          # Generated paper figures (+ cached sweeps)
+│
+└── data/                             # Cached trajectories (loaded by notebooks)
+    ├── traj_controls_reach_avoid_mpc.npz
+    ├── traj_controls_vanilla_mpc.npz
+    └── traj_controls_ra_mpc_acrobot.npz
 ```
+
+Each notebook starts with a small bootstrap cell that puts `controllers/` and
+`python/` on `sys.path` and points `DATA` at `data/`, so notebooks run correctly
+from the `notebooks/` directory.
 
 ## Workflow
 
@@ -86,7 +95,7 @@ MATLAB
       │  produces u*(x), V(x)
       ▼
   export_to_python.m
-      │  writes  sop_bounded_control_XXX_<timestamp>.py
+      │  writes  controllers/sop_bounded_control_XXX_<timestamp>.py
       ▼
 Python
   example_XX_unconstrained_reach_avoid.ipynb  ← Unconstrained Reach-Avoid
@@ -136,21 +145,22 @@ conda activate rab_mpc
 
 ## Running the Notebooks
 
-1. Run the desired MATLAB example script to generate the controller Python file:
+1. Run the desired MATLAB example script (from `matlab/`) to generate the
+   controller Python file; the export is written to `controllers/`:
 
    ```matlab
-   % in MATLAB
-   example_double_integrator   % synthesises controller and exports to Python
-   example_dubins_car
+   % in MATLAB, from the matlab/ directory
+   example_dubins_car    % synthesises controllers and exports to controllers/
    example_manipulator
    ```
 
-2. Open the corresponding Jupyter notebook and run all cells:
+2. Open the corresponding Jupyter notebook (from `notebooks/`) and run all cells:
    ```bash
-   jupyter notebook example_double_integrator_mpc.ipynb
+   jupyter notebook notebooks/example_dubins_car_reach_avoid_mpc.ipynb
    ```
 
-The notebooks are self-contained after the controller Python file exists.
+The notebooks are self-contained after the controller Python file exists; the
+bootstrap cell at the top resolves `controllers/`, `python/`, and `data/`.
 
 ## Experiment Settings
 
@@ -158,9 +168,8 @@ The notebooks are self-contained after the controller Python file exists.
 
 | System             | State $x$                                     | Output $y = h(x)$                                                                   | Safe set                                            | Target set                                                                                 | Control bounds                             |
 | ------------------ | --------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| Double integrator  | $[x_1, x_2]$                                  | $y = x_1$                                                                           | $1 - x_1^2 \geq 0$                                  | $x_1^2 - 0.01 \leq 0$                                                                      | $u\in[-20,20]$                             |
-| Dubins car         | $[x_1, x_2, \theta, v]$                       | $[x_1, x_2]$                                                                        | Annular ring: $4 \leq y_1^4+y_2^4 \leq 16$          | Ellipse centred at $(-1.7, 0)$: $\frac{(y_1+1.7)^2}{0.1}+\frac{y_2^2}{0.4}\leq 1$          | $\omega\in[-5,5]$ rad/s, $a\in[-5,5]$ m/s² |
-| Planar manipulator | $[q_1, q_2, \dot{q}_1, \dot{q}_2, q_1{+}q_2]$ | EE position $(l_1\cos q_1 + l_2\cos(q_1{+}q_2),\ l_1\sin q_1 + l_2\sin(q_1{+}q_2))$ | Workspace polytope ($\vert\sin q_2\vert \geq 0.15$) | Ellipse centred at $(5.5, 1.8)$: $\frac{(y_1-5.5)^2}{2.88}+\frac{(y_2-1.8)^2}{0.32}\leq 1$ | $\tau_{1,2}\in[-500,500]$ N·m              |
+| Dubins car         | $[x_1, x_2, \theta, v]$                       | $[x_1, x_2]$                                                                        | Annular ring: $4 \leq y_1^4+y_2^4 \leq 16$          | Ellipse centred at $(-1.7, 0)$: $\frac{(y_1+1.7)^2}{0.1}+\frac{y_2^2}{0.4}\leq 1$          | $\omega\in[-5,5]$ rad/s, $a\in[-5,5]$ m/s²       |
+| Planar manipulator | $[q_1, q_2, \dot{q}_1, \dot{q}_2, q_1{+}q_2]$ | EE position $(l_1\cos q_1 + l_2\cos(q_1{+}q_2),\ l_1\sin q_1 + l_2\sin(q_1{+}q_2))$ | Workspace polytope ($\vert\sin q_2\vert \geq 0.15$) | Ellipse centred at $(5.5, 1.8)$: $\frac{(y_1-5.5)^2}{2.88}+\frac{(y_2-1.8)^2}{0.32}\leq 1$ | $\tau_1\in[-680,680]$, $\tau_2\in[-500,500]$ N·m |
 
 Physical constants — manipulator: $m_i=1$ kg, $l_i=4$ m, $I_i=0.02$ kg·m² ($i=1,2$).
 
@@ -168,8 +177,6 @@ Physical constants — manipulator: $m_i=1$ kg, $l_i=4$ m, $I_i=0.02$ kg·m² ($
 
 | Notebook                                        | Method                    | $\delta t$ (s) | $N$ | $Q_y$                 | $Q_{f,y}$              | $R_u$            | Terminal constraint   |
 | ----------------------------------------------- | ------------------------- | :------------: | :-: | --------------------- | ---------------------- | ---------------- | --------------------- |
-| `example_double_integrator_no_mpc`              | Unconstrained Reach-Avoid |      0.01      |  —  | —                     | —                      | —                | $V(x)\geq 0$ (always) |
-| `example_double_integrator_mpc`                 | Reach-Avoid MPC           |      0.01      | 20  | $Q=\text{diag}(10,1)$ | $Q_f=\text{diag}(1,1)$ | $R=0.01$         | $V(x_N)\geq 0$        |
 | `example_dubins_car_unconstrained_reach_avoid`  | Unconstrained Reach-Avoid |      0.02      |  —  | —                     | —                      | —                | $V(x)\geq 0$ (always) |
 | `example_dubins_car_reach_avoid_mpc`            | Reach-Avoid MPC           |      0.05      | 25  | diag(5, 5)            | diag(80, 80)           | diag(0.05, 0.05) | $V(x_N)\geq 0$        |
 | `example_dubins_car_vanilla_mpc`                | Vanilla MPC               |      0.05      | 25  | diag(5, 5)            | diag(80, 80)           | diag(0.05, 0.05) | $\phi(h(x_N))\leq 0$  |
@@ -181,16 +188,10 @@ All MPC problems solved with IPOPT (tolerance $10^{-4}$, max 3000 iterations) vi
 
 ## MPC Formulation
 
-The MPC solves at each step $t$ (Dubins car and manipulator use output-tracking cost; double integrator uses state cost):
+The MPC solves at each step $t$ with an output-tracking cost:
 
 $$
 \min_{x_{0:N},\, u_{0:N-1}} \sum_{k=0}^{N-1} {\lVert h(x_k) - y^{\ast}\rVert}_{Q_y}^2 + {\lVert u_k\rVert}_{R_u}^2 + {\lVert h(x_N) - y^{\ast}\rVert}_{Q_{f,y}}^2
-\quad \text{(output cost, Dubins / manipulator)}
-$$
-
-$$
-\min_{x_{0:N},\, u_{0:N-1}} \sum_{k=0}^{N-1} x_k^{\top} Q x_k + u_k^{\top} R u_k + x_N^{\top} Q_f x_N
-\quad \text{(state cost, double integrator)}
 $$
 
 subject to:

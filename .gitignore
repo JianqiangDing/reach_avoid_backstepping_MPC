@@ -17,6 +17,7 @@ temp.txt
 .idea/
 *.png
 !reach_avoid_mpc.png
+!figures/*.png
 
 # Auto-generated MATLAB export files (intermediate / archived runs)
 generated/
