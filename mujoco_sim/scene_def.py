@@ -111,22 +111,19 @@ def _geom(s):
 
 def generate_mjcf(scene=SCENE, path=None):
     z0 = scene["z0"]
-    ws = scene["workspace"]; cx, cy = ws["center"]; hx, hy = ws["semi"]
+    ws = scene["workspace"]; cx, cy = ws["center"]; ax, ay = ws["semi"]
     tg = scene["target"]; tcx, tcy = tg["center"]; trx, try_ = tg["radii"]
     sx, sy = scene["start"]
 
     body = ""
-    # translucent task plane (workspace region)
-    body += _geom(f'<geom name="taskplane" type="box" pos="{cx} {cy} {z0}" '
-                  f'size="{hx} {hy} 0.002" contype="0" conaffinity="0" '
+    # translucent workspace region (flat ellipsoid)
+    body += _geom(f'<geom name="taskplane" type="ellipsoid" pos="{cx} {cy} {z0}" '
+                  f'size="{ax} {ay} 0.002" contype="0" conaffinity="0" '
                   f'rgba="0.5 0.55 0.6 0.12"/>')
-    # workspace outline (4 thin bars)
-    for nm, px, py, sxh, syh in [
-        ("ws_n", cx, cy + hy, hx, 0.004), ("ws_s", cx, cy - hy, hx, 0.004),
-        ("ws_e", cx + hx, cy, 0.004, hy), ("ws_w", cx - hx, cy, 0.004, hy)]:
-        body += _geom(f'<geom name="{nm}" type="box" pos="{px} {py} {z0}" '
-                      f'size="{sxh} {syh} 0.004" contype="0" conaffinity="0" '
-                      f'rgba="0.35 0.4 0.5 0.8"/>')
+    # workspace outline (slightly larger flat ellipsoid, low alpha, reads as a ring)
+    body += _geom(f'<geom name="ws_ring" type="ellipsoid" pos="{cx} {cy} {z0-0.001}" '
+                  f'size="{ax+0.004} {ay+0.004} 0.001" contype="0" conaffinity="0" '
+                  f'rgba="0.35 0.4 0.5 0.5"/>')
     # target ellipse (flat ellipsoid)
     body += _geom(f'<geom name="target" type="ellipsoid" pos="{tcx} {tcy} {z0}" '
                   f'size="{trx} {try_} 0.003" contype="0" conaffinity="0" '
