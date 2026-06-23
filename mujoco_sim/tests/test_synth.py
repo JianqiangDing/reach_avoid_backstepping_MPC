@@ -8,6 +8,7 @@ def test_scene_to_matlab_contains_sets_and_bound():
     assert "safe_set_sym" in src and "target_set_sym" in src
     assert "a_max = 1.0" in src
     assert "y1" in src and "y2" in src
+    assert "bound_min" in src and "bound_max" in src
 
 
 def test_scene_hash_stable_and_sensitive():

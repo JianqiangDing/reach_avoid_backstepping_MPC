@@ -18,16 +18,25 @@ MATLAB_DIR = os.path.join(REPO, "matlab")
 CONTROLLERS = os.path.join(REPO, "controllers")
 
 
-def scene_to_matlab(scene=S.SCENE, ds=4, dv=4, mu_val=0.1, samples_num=1000):
-    """MATLAB source defining the scene-specific symbolic sets + parameters."""
+def scene_to_matlab(scene=S.SCENE, ds=4, dv=4, mu_val=0.1, samples_num=1000, v_max=1.0):
+    """MATLAB source defining the scene-specific symbolic sets + parameters.
+
+    Also emits the SOP state-sampling box bound_min/bound_max for the double
+    integrator state [px, py, vx, vy]: position over the workspace bbox, velocity
+    in [-v_max, v_max]. (The DI decoupling matrix is identity, so unlike the Dubins
+    example there is no singularity to exclude.)
+    """
     safe = sp.octave_code(S.compose_safe_poly(scene))
     targ = sp.octave_code(S.compose_target_poly(scene))
+    cx, cy = scene["workspace"]["center"]; ax, ay = scene["workspace"]["semi"]
     return (
         "syms y1 y2 real\n"
         f"safe_set_sym = {safe};\n"
         f"target_set_sym = {targ};\n"
         f"a_max = {float(scene['a_max'])};\n"
         f"ds = {ds}; dv = {dv}; mu_val = {mu_val}; samples_num = {samples_num};\n"
+        f"bound_min = [{cx - ax}; {cy - ay}; {-v_max}; {-v_max}];\n"
+        f"bound_max = [{cx + ax}; {cy + ay}; {v_max}; {v_max}];\n"
     )
 
 
@@ -55,7 +64,7 @@ def synthesize(scene=S.SCENE, force=False, ds=4, dv=4):
     import subprocess
     subprocess.run(["matlab", "-batch", "example_franka_planar"], cwd=MATLAB_DIR, check=True)
     import glob
-    exported = sorted(glob.glob(os.path.join(CONTROLLERS, "sop_bounded_control_franka_planar*.py")))
+    exported = sorted(glob.glob(os.path.join(CONTROLLERS, "sop_bounded_control_franka_planar_result*.py")))
     if not exported:
         raise RuntimeError("synthesis produced no controller export (SOS infeasible?)")
     import shutil
