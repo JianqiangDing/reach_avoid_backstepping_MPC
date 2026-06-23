@@ -19,5 +19,13 @@ temp.txt
 !reach_avoid_mpc.png
 !figures/*.png
 
+# Rendered / recorded media
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.gif
+
 # Auto-generated MATLAB export files (intermediate / archived runs)
 generated/
