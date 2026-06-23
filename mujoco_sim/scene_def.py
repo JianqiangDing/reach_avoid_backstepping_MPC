@@ -1,16 +1,16 @@
 """Planar reach-avoid scene definition for the Franka task-space testbed.
 
 Defines (parametrically) the horizontal task plane at z0 and the reach-avoid
-geometry -- workspace bound, target ellipse, circular obstacles -- placed inside
-the Franka's DEXTEROUS region (away from the +x arm-extension boundary where the
-double-integrator abstraction saturates; see the P0.5 probe).
+geometry -- elliptical workspace bound, target ellipse, circular obstacles --
+placed inside the Franka's DEXTEROUS region (away from the +x arm-extension
+boundary where the double-integrator abstraction saturates; see the P0.5 probe).
 
-Provides:
-  - SCENE: the default scene config (numbers chosen in the dexterous box)
-  - numpy set evaluators: target_phi(y)<=0 inside target, safe_psi(y)>=0 inside safe
-  - generate_mjcf(): writes scene_reachavoid.xml (Franka + floor + decorative
-    geoms for the sets). Geoms are contype/conaffinity=0 (visual only): obstacles
-    are enforced by the controller's safe-set constraint, not physical contact.
+Both sets are represented as a SINGLE polynomial in the output y=(y1,y2):
+  - target  phi(y) <= 0 : the goal ellipse.
+  - safe    psi(y) >= 0 : w(y) * prod_i o_i(y), where w is one elliptical
+    workspace factor and o_i = (y-c_i)^T(y-c_i) - r_i^2 is "outside obstacle i".
+The product is exact (no spurious lobes) iff obstacles are pairwise disjoint and
+strictly interior to the workspace ellipse -- enforced by validate_scene().
 
 Coordinates are world (x, y) in the plane at height z0.
 """
@@ -19,38 +19,90 @@ from __future__ import annotations
 
 import os
 import numpy as np
+import sympy as sp
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+# output-space symbols (shared by the composed polynomials)
+Y1, Y2 = sp.symbols("y1 y2")
 
-# default scene: workspace box centered in the dexterous region, x<=0.62 to avoid
-# the +x extension boundary (home EE is at (0.554, 0, 0.625)).
+
+# default scene: elliptical workspace in the dexterous region (x<=0.62 to avoid
+# the +x extension boundary; home EE is at (0.554, 0, 0.625)). Target on the left,
+# two obstacles straddling a central corridor between start (right) and target.
 SCENE = dict(
     z0=0.625,
-    workspace=dict(center=(0.46, 0.0), half=(0.16, 0.28)),   # x in [0.30,0.62], y in [-0.28,0.28]
-    start=(0.554, 0.0),
-    target=dict(center=(0.36, 0.19), radii=(0.07, 0.06)),
-    obstacles=[dict(center=(0.47, 0.10), radius=0.05),
-               dict(center=(0.45, -0.12), radius=0.05)],
+    workspace=dict(center=(0.46, 0.0), semi=(0.16, 0.26)),   # ellipse: x in [0.30,0.62], y in [-0.26,0.26]
+    start=(0.56, 0.0),
+    target=dict(center=(0.36, 0.0), radii=(0.045, 0.045)),
+    obstacles=[dict(center=(0.46, 0.09), radius=0.05),
+               dict(center=(0.46, -0.09), radius=0.05)],
     a_max=1.0,
 )
 
 
-def target_phi(y, scene=SCENE):
-    """phi(y) <= 0 inside the target ellipse."""
+# ---- single-polynomial set composition --------------------------------------
+def _ws_factor(scene, y1, y2):
+    cx, cy = scene["workspace"]["center"]; ax, ay = scene["workspace"]["semi"]
+    return 1 - ((y1 - cx) / ax) ** 2 - ((y2 - cy) / ay) ** 2
+
+
+def compose_target_poly(scene=SCENE):
+    """phi(y) <= 0 inside the target ellipse (single quadratic)."""
     cx, cy = scene["target"]["center"]; rx, ry = scene["target"]["radii"]
-    return ((y[0] - cx) / rx) ** 2 + ((y[1] - cy) / ry) ** 2 - 1.0
+    return sp.expand(((Y1 - cx) / rx) ** 2 + ((Y2 - cy) / ry) ** 2 - 1)
+
+
+def compose_safe_poly(scene=SCENE):
+    """psi(y) >= 0 inside the safe set = workspace ellipse minus the obstacles."""
+    psi = _ws_factor(scene, Y1, Y2)
+    for ob in scene["obstacles"]:
+        ox, oy = ob["center"]; r = ob["radius"]
+        psi = psi * ((Y1 - ox) ** 2 + (Y2 - oy) ** 2 - r ** 2)
+    return sp.expand(psi)
+
+
+def target_func(scene=SCENE):
+    """Vectorized callable f(y1, y2) -> phi value(s)."""
+    return sp.lambdify((Y1, Y2), compose_target_poly(scene), "numpy")
+
+
+def safe_func(scene=SCENE):
+    """Vectorized callable f(y1, y2) -> psi value(s)."""
+    return sp.lambdify((Y1, Y2), compose_safe_poly(scene), "numpy")
+
+
+def target_phi(y, scene=SCENE):
+    return float(target_func(scene)(y[0], y[1]))
 
 
 def safe_psi(y, scene=SCENE):
-    """psi(y) >= 0 inside the safe set (inside workspace AND outside every obstacle)."""
-    cx, cy = scene["workspace"]["center"]; hx, hy = scene["workspace"]["half"]
-    inside = min(hx ** 2 - (y[0] - cx) ** 2, hy ** 2 - (y[1] - cy) ** 2)
-    val = inside
-    for ob in scene["obstacles"]:
-        ox, oy = ob["center"]
-        val = min(val, (y[0] - ox) ** 2 + (y[1] - oy) ** 2 - ob["radius"] ** 2)
-    return val
+    return float(safe_func(scene)(y[0], y[1]))
+
+
+def validate_scene(scene=SCENE, n_boundary=72):
+    """Ensure obstacles are pairwise disjoint and obstacles+target are strictly
+    interior to the workspace ellipse (so the product safe set is exact)."""
+    cx, cy = scene["workspace"]["center"]; ax, ay = scene["workspace"]["semi"]
+
+    def w(px, py):
+        return 1 - ((px - cx) / ax) ** 2 - ((py - cy) / ay) ** 2
+
+    th = np.linspace(0, 2 * np.pi, n_boundary, endpoint=False)
+    obs = scene["obstacles"]
+    for i, ob in enumerate(obs):
+        ox, oy = ob["center"]; r = ob["radius"]
+        if not np.all(w(ox + r * np.cos(th), oy + r * np.sin(th)) > 0):
+            raise ValueError(f"obstacle {i} not strictly inside workspace ellipse")
+    for i in range(len(obs)):
+        for j in range(i + 1, len(obs)):
+            ci = np.array(obs[i]["center"]); cj = np.array(obs[j]["center"])
+            if np.linalg.norm(ci - cj) <= obs[i]["radius"] + obs[j]["radius"]:
+                raise ValueError(f"obstacles {i} and {j} overlap")
+    tcx, tcy = scene["target"]["center"]; trx, try_ = scene["target"]["radii"]
+    if not np.all(w(tcx + trx * np.cos(th), tcy + try_ * np.sin(th)) > 0):
+        raise ValueError("target not strictly inside workspace ellipse")
+    return True
 
 
 def _geom(s):
@@ -59,7 +111,7 @@ def _geom(s):
 
 def generate_mjcf(scene=SCENE, path=None):
     z0 = scene["z0"]
-    ws = scene["workspace"]; cx, cy = ws["center"]; hx, hy = ws["half"]
+    ws = scene["workspace"]; cx, cy = ws["center"]; hx, hy = ws["semi"]
     tg = scene["target"]; tcx, tcy = tg["center"]; trx, try_ = tg["radii"]
     sx, sy = scene["start"]
 
@@ -120,9 +172,9 @@ def generate_mjcf(scene=SCENE, path=None):
 
 
 if __name__ == "__main__":
+    validate_scene(SCENE)
     p = generate_mjcf()
-    print(f"wrote {p}")
-    # quick sanity: start should be safe and not yet at target
+    print(f"validated + wrote {p}")
     s = np.array(SCENE["start"])
     print(f"start safe_psi={safe_psi(s):.4f} (>0 ok)  target_phi={target_phi(s):.4f} (>0 = not reached)")
     tc = np.array(SCENE["target"]["center"])
