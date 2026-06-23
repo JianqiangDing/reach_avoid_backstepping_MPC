@@ -771,3 +771,61 @@ git commit -m "chore(milestone0): record passing set + k1-field verification"
 ## Out of scope (Phase-2 plan, after the gate passes)
 
 `controllers.py` (RA / RA-MPC / Vanilla) · `sim_loop.py` (MuJoCo closed loop using the built `FrankaPlanarPlant`) · `metrics.py` · `viz.py` (closed-loop trajectory + video via `view_sim.py`) · `sweep.py` (initial-condition / mismatch sweeps) · headline comparison (decision §9-E: ~20 initial conditions, RA-MPC reach-avoid success vs Vanilla failures on obstacle scenes).
+
+---
+
+## Execution Log & Findings (2026-06-23)
+
+**Status: Milestone 0 EXECUTED — gate FAILED at the synthesis / k1-field check. STOP before Phase 2.**
+
+### What was completed (committed on branch `mujoco-franka-reachavoid`)
+- Tasks 1–3, 6, 7 implemented with TDD — **10 unit tests passing**:
+  `scene_def` single-polynomial composition + `validate_scene`; elliptical-workspace
+  MJCF; `verify_sets.py` (2D set figure + grid consistency, `mismatch_frac=0`);
+  `synth.py` (sympy→MATLAB sets via `octave_code`, `scene_hash`, `load_bundle`,
+  `synthesize`, `bound_min/bound_max` emission); `verify_field.py`.
+- Task 4: MATLAB toolchain verified — `sosprogram` (SOSTOOLS) + `mosekopt` (MOSEK) +
+  `reach_avoid_controller` / `solvesop_bounded_control` all on the path.
+- Task 5: `matlab/example_franka_planar.m` written and **runs** — the synthesis
+  pipeline DOES generalize to the planar double integrator (MOSEK solves in ~3.5 s,
+  certificate + controller + `k1` exported). The pipeline mechanics are fine.
+
+### The failure
+- `valid_count = 0` from `solvesop_bounded_control` (the SOP found **zero** valid
+  control samples; the Dubins example gets 249/1000).
+- The exported `k1` has tiny magnitude (~1e-5) but its DIRECTION is roughly toward the
+  target; integrating the **normalized** field gives `success_frac ≈ 0`,
+  `left_safe_frac ≈ 0.25–0.29` (most streamlines stall or leave the safe set).
+- **`a_max` sweep {1, 5, 10, 20} → `valid_count = 0` and identical `k1` for all.** So it
+  is NOT a control-bound / scaling issue.
+
+### Root cause (the real bug — set construction)
+The backstepping reach-avoid construction requires the safe-set / seed function to be
+**navigation-function-like**: a single **global maximum located inside the target set**,
+**monotone toward it**, and **no other critical points** (∇=0) inside the safe set. The
+single-polynomial product `ψ = w·∏ᵢoᵢ` used in Tasks 1/5 does **not** satisfy this:
+- its maximum sits in the middle of the workspace, not in the target;
+- it has interior saddles/local extrema (e.g. between the two obstacles).
+So the induced single-integrator flow `ẏ = k1(y)` converges to spurious critical points
+instead of the target, and the bounded SOP cannot certify it (`valid_count=0`).
+
+### Planned improvement (next session)
+1. **Reshape the seed function** so it is navigation-function-like with its unique
+   interior maximum inside the target. Candidate approaches:
+   - a Rimon–Koditschek navigation function (polynomial/rational form) keyed to the
+     target as the goal and the obstacles/workspace as repulsors;
+   - or compose `ψ` as a target-attraction term multiplicatively gated by obstacle and
+     workspace barriers, tuned so the unique max is at the target and no interior
+     saddles remain;
+   - sweep the parameterization and verify numerically.
+2. **Add a fast precondition CHECK to Milestone 0** (in `verify_sets.py` /
+   `verify_field.py`): on a grid, confirm `ψ`'s argmax lies inside the target and there
+   are no other interior points with ∇ψ ≈ 0 — **fail fast before** running MATLAB.
+3. Re-run the gate; only then proceed to Phase 2.
+
+### Reusable as-is
+All scaffolding stands — `scene_def` composition/validation, `verify_sets`, `synth`
+driver, `verify_field`, `example_franka_planar.m`, the MuJoCo plant. Only the `ψ`
+construction must change, plus the new precondition check. The `verify_field` gate has
+been updated to integrate the **normalized** `k1` direction field (raw magnitude is
+meaningless for a backstepping virtual control).

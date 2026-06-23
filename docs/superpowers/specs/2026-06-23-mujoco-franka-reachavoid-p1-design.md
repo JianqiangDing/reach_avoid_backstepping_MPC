@@ -101,6 +101,15 @@ uses a degree-8 product safe set.
 Geometry is decorative in MuJoCo (`contype/conaffinity=0`): obstacles are enforced by
 the controller's safe-set constraint, not physical contact.
 
+**CRITICAL PRECONDITION (learned from the Milestone-0 run, 2026-06-23).** The
+backstepping reach-avoid construction requires the safe-set / seed function to be
+**navigation-function-like**: it must attain its global maximum at a point **inside the
+target set**, and have **no other critical points** (∇=0) inside the safe set. The plain
+product `ψ = w·∏ᵢoᵢ` does NOT satisfy this — its maximum sits mid-workspace and it has
+interior saddles/extrema between obstacles — so the synthesised `k1` flow converges to
+the wrong place. The set-construction step must therefore RESHAPE the function (see the
+Milestone-0 findings in the plan doc) so its unique interior maximum lies in the target.
+
 ### 5.1 Milestone 0 — set & vector-field verification (GATES everything else)
 
 Per the agreed sequencing, before any double-integrator / MPC / MuJoCo work we verify in

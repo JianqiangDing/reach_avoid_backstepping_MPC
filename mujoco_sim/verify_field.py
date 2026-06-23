@@ -42,8 +42,14 @@ def _safe_starts(scene, n, max_tries=100000):
     return np.array(pts)
 
 
-def field_reach_avoid(scene, k1, n_starts=40, t_max=20.0, dt=0.02):
-    """Integrate y_dot=k1(y) from safe starts; report reach / leave-safe fractions."""
+def field_reach_avoid(scene, k1, n_starts=40, t_max=20.0, dt=0.02, speed=0.1):
+    """Integrate the NORMALIZED k1 direction field (streamlines) from safe starts.
+
+    The backstepping virtual control k1 has an arbitrary/tiny magnitude (~1e-5), so
+    what matters for "is this a reach-avoid flow" is its DIRECTION. We follow the unit
+    field at a fixed `speed`; a point that hits a non-target equilibrium (|k1|~0) stalls
+    and counts as not-reached. Reports reach / leave-safe fractions over the starts.
+    """
     safe = S.safe_func(scene); phi = S.target_func(scene)
     reached = left = 0
     for p0 in _safe_starts(scene, n_starts):
@@ -53,8 +59,10 @@ def field_reach_avoid(scene, k1, n_starts=40, t_max=20.0, dt=0.02):
                 left += 1; break
             if phi(p[0], p[1]) <= 0:
                 reached += 1; break
-            p = p + dt * k1(p)
-        # ran out of time without reaching -> neither reached nor left
+            d = k1(p); n = np.linalg.norm(d)
+            if n < 1e-12:
+                break  # stalled at a non-target equilibrium -> not reached
+            p = p + dt * (d / n) * speed
     return dict(success_frac=reached / n_starts, left_safe_frac=left / n_starts)
 
 

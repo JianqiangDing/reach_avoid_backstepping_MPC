@@ -29,3 +29,7 @@ temp.txt
 
 # Auto-generated MATLAB export files (intermediate / archived runs)
 generated/
+
+# Generated per-scene Franka synthesis (regenerable via mujoco_sim/synth.py)
+controllers/sop_bounded_control_franka_planar*.py
+mujoco_sim/synth_cache/
