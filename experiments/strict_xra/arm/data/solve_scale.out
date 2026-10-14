@@ -1,0 +1,2 @@
+terminal set 5856 states | s_U = 5.69 | T_eps(s) [ms]: 0.5: 1.08, 1: 1.99, 1.5: 2.64, 2: 2.93, 2.5: 2.94, 3: 2.80, 3.5: 2.55, 4: 2.33 | chosen s = 2.5 (largest T_eps), T = 1.5 ms is 1.96 times below T_eps
+at s = 2.5: lambda 0.1000, mu 0.6250, |tau| on the terminal set <= [64.2 10.2], eta 4.428e-02 (lambda delta 4.384e-02), M2 35.90, second-order T* 2.47 ms, T_eps 2.94 ms

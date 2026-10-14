@@ -1,0 +1,80 @@
+base design: delta = 0.1918, omega = 5.937e+05, eps(T=0.05) = 9.298e-05
+T=0.025   N=50  RA-MPC 258/300 (feasible at k=0: 258, later infeasible 0, unsafe 0, timeout 0) | vanilla 213 | sampled URA  42 | decrease viol 0/9692 | eps(T) +5.16e-05 | t_entry med 0.73 s | 148 ms/solve (181s)
+T=0.03125 N=40  RA-MPC 259/300 (feasible at k=0: 259, later infeasible 0, unsafe 0, timeout 0) | vanilla 213 | sampled URA  42 | decrease viol 0/7714 | eps(T) +6.29e-05 | t_entry med 0.72 s | 130 ms/solve (131s)
+T=0.05    N=25  RA-MPC 258/300 (feasible at k=0: 258, later infeasible 0, unsafe 0, timeout 0) | vanilla 213 | sampled URA  42 | decrease viol 0/4586 | eps(T) +9.30e-05 | t_entry med 0.75 s | 144 ms/solve (94s)
+T=0.0625  N=20  RA-MPC 259/300 (feasible at k=0: 259, later infeasible 0, unsafe 0, timeout 0) | vanilla 213 | sampled URA  42 | decrease viol 0/3649 | eps(T) +1.10e-04 | t_entry med 0.75 s | 149 ms/solve (83s)
+T=0.125   N=10  RA-MPC 257/300 (feasible at k=0: 257, later infeasible 0, unsafe 0, timeout 0) | vanilla 213 | sampled URA  42 | decrease viol 0/1664 | eps(T) +1.56e-04 | t_entry med 0.75 s | 164 ms/solve (54s)
+T=0.25    N=5   RA-MPC 253/300 (feasible at k=0: 253, later infeasible 0, unsafe 0, timeout 0) | vanilla 213 | sampled URA  42 | decrease viol 0/740 | eps(T) +6.23e-05 | t_entry med 0.75 s | 207 ms/solve (41s)
+T=0.3125  N=4   RA-MPC 245/300 (feasible at k=0: 245, later infeasible 0, unsafe 0, timeout 0) | vanilla 213 | sampled URA  42 | decrease viol 0/579 | eps(T) -7.67e-05 | t_entry med 0.94 s | 221 ms/solve (39s)
+T=0.625   N=2   RA-MPC 235/300 (feasible at k=0: 235, later infeasible 0, unsafe 0, timeout 0) | vanilla 209 | sampled URA  42 | decrease viol 0/345 | eps(T) -1.98e-03 | t_entry med 1.25 s | 323 ms/solve (42s)
+saved data/sweep.pkl
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+

@@ -1,0 +1,15 @@
+target: compile/load 115.4s
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+  far Na=60: ok True, 0.90s, iterations 28, status Solve_Succeeded, rollout feasible True
+  near Na=60: ok True, 0.51s, iterations 16, status Solve_Succeeded, rollout feasible True
+cert: compile/load 241.8s
+  far Na=60: ok True, 1.66s, iterations 55, status Solve_Succeeded, rollout feasible True
+  far Na=30: ok True, 1.16s, iterations 40, status Solve_Succeeded, rollout feasible True
+  near Na=60: ok True, 0.45s, iterations 15, status Solve_Succeeded, rollout feasible True
+  near Na=30: ok True, 0.61s, iterations 21, status Solve_Succeeded, rollout feasible True

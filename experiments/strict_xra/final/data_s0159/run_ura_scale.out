@@ -1,0 +1,12 @@
+URA at s=2: {'reached': 51, 'unsafe': 248, 'v=0': 1} | in its X_RA 0 | exceeding the bounds: 136 runs (omega 136, a 0), among successes 16 | peak omega median 2.68 max 1255.4, a max 0.85 | time med 10.7 s | all three 12, with violation 12, URA&~RA 26, RA&~URA 211
+    73 [-1.42, 0.79, -2.501, 0.068] dist 0.84 peaks [3.47, 0.2] t 3.4 time above bounds 0.25
+    262 [-1.445, 0.77, -2.309, 0.033] dist 0.81 peaks [5.62, 0.2] t 3.7 time above bounds 0.33
+    121 [-1.44, -0.759, 2.345, 0.072] dist 0.8 peaks [3.79, 0.21] t 3.1 time above bounds 0.3
+    99 [-1.594, 0.733, -2.059, 0.073] dist 0.74 peaks [4.25, 0.14] t 3.1 time above bounds 0.34
+    192 [-1.675, 0.694, -1.704, 0.074] dist 0.69 peaks [6.27, 0.1] t 3.0 time above bounds 0.37
+URA at s=3: {'reached': 48, 'unsafe': 251, 'v=0': 1} | in its X_RA 0 | exceeding the bounds: 198 runs (omega 198, a 0), among successes 22 | peak omega median 4.60 max 2060.8, a max 1.79 | time med 7.5 s | all three 10, with violation 10, URA&~RA 26, RA&~URA 214
+    73 [-1.42, 0.79, -2.501, 0.068] dist 0.84 peaks [5.1, 0.45] t 2.5 time above bounds 0.4
+    262 [-1.445, 0.77, -2.309, 0.033] dist 0.81 peaks [13.05, 0.44] t 2.7 time above bounds 0.43
+    121 [-1.44, -0.759, 2.345, 0.072] dist 0.8 peaks [5.65, 0.47] t 2.2 time above bounds 0.44
+    188 [-1.596, 0.667, -1.59, 0.068] dist 0.68 peaks [7.2, 0.33] t 0.7 time above bounds 0.16
+    204 [-1.525, 0.636, -1.325, 0.034] dist 0.66 peaks [17.7, 0.45] t 0.7 time above bounds 0.12

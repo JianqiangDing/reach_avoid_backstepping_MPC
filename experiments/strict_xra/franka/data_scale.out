@@ -1,0 +1,2 @@
+terminal-set samples 40000
+T_eps(1) 41.33 ms -> s = 3.306 | T_eps(s) 12.50 ms (T_eps(1)/s = 12.50) | task bounds U [2.6 4.6 2.2 0.4] (hardware [87. 87. 87. 12.], ratio [0.03  0.053 0.025 0.033]) | s_U 3.714 | terminal controller on the terminal set [2.03 3.65 1.68 0.31], on X_RA [2.71 4.88 2.42 0.44] | lambda_s 0.331, mu_s 0.0109 | URA scale 6.613

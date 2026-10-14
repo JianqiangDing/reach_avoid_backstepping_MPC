@@ -1,0 +1,18 @@
+  red_fwd_sq: reached in 1.40 s, 140 steps, solve median 371 ms, scale 2.386, bounds (28.5, 8.5)
+1/8 red_fwd_sq: RA-MPC 1.40 s (scale 2.386, replay mismatch 0e+00), centring 0.63 s, transit 2.25 s (0 clipped) | t = 8.88 s (52s)
+  blue_fwd_sq: reached in 1.62 s, 162 steps, solve median 398 ms, scale 1.747, bounds (28.5, 8.5)
+2/8 blue_fwd_sq: RA-MPC 1.62 s (scale 1.747, replay mismatch 0e+00), centring 0.63 s, transit 3.00 s (0 clipped) | t = 18.73 s (115s)
+  green_fwd_sq: reached in 1.40 s, 140 steps, solve median 359 ms, scale 1.623, bounds (28.5, 8.5)
+3/8 green_fwd_sq: RA-MPC 1.40 s (scale 1.623, replay mismatch 0e+00), centring 0.62 s, transit 2.25 s (0 clipped) | t = 27.60 s (168s)
+  orange_fwd_sq: reached in 1.65 s, 165 steps, solve median 389 ms, scale 1.690, bounds (28.5, 8.5)
+4/8 orange_fwd_sq: RA-MPC 1.65 s (scale 1.690, replay mismatch 0e+00), centring 0.63 s, transit 1.00 s (0 clipped) | t = 35.48 s (233s)
+  red_rev_sq: reached in 1.32 s, 132 steps, solve median 358 ms, scale 1.175, bounds (28.5, 8.5)
+5/8 red_rev_sq: RA-MPC 1.32 s (scale 1.175, replay mismatch 0e+00), centring 0.62 s, transit 2.75 s (0 clipped) | t = 44.77 s (279s)
+  blue_rev_sq: reached in 1.61 s, 161 steps, solve median 372 ms, scale 1.767, bounds (28.5, 8.5)
+6/8 blue_rev_sq: RA-MPC 1.61 s (scale 1.767, replay mismatch 0e+00), centring 0.62 s, transit 2.25 s (0 clipped) | t = 53.85 s (340s)
+  green_rev_sq: reached in 1.35 s, 135 steps, solve median 271 ms, scale 1.499, bounds (28.5, 8.5)
+7/8 green_rev_sq: RA-MPC 1.35 s (scale 1.499, replay mismatch 0e+00), centring 0.62 s, transit 2.50 s (0 clipped) | t = 62.92 s (378s)
+  orange_rev_sq: reached in 1.61 s, 161 steps, solve median 252 ms, scale 1.653, bounds (28.5, 8.5)
+8/8 orange_rev_sq: RA-MPC 1.61 s (scale 1.653, replay mismatch 0e+00), centring 0.62 s, transit 0.00 s (0 clipped) | t = 69.75 s (417s)
+MuJoCo, period by period (torques x 0.1): max one-period state difference to the paper's plant 2.2e-16; total 69.75 s; peak |tau| world [2.85 0.85] within [2.85 0.85]
+min psi/pmax along each transport: red_fwd_sq 0.1429, blue_fwd_sq 0.0059, green_fwd_sq 0.3914, orange_fwd_sq 0.0058, red_rev_sq 0.4481, blue_rev_sq 0.4023, green_rev_sq 0.0093, orange_rev_sq 0.0050

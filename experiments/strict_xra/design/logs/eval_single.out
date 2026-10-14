@@ -1,0 +1,83 @@
+X_RA disc radius at the 300 positions: max 0.0298, median over certified positions 0.0150
+r0=0.01: speed [0.000, 0.103] | in X_RA 191, in terminal set 107 | URA {np.str_('reached'): 291, np.str_('unsafe'): 9}, of X_RA 191/191, time med 31.7 s, peak omega 0.15, peak a 0.005, peak over all runs 0.54/0.01 (37s)
+r0=0.02: speed [0.002, 0.108] | in X_RA 124, in terminal set 67 | URA {np.str_('reached'): 267, np.str_('unsafe'): 33}, of X_RA 124/124, time med 29.9 s, peak omega 0.31, peak a 0.006, peak over all runs 0.98/0.01 (33s)
+r0=0.03: speed [0.005, 0.115] | in X_RA 69, in terminal set 32 | URA {np.str_('reached'): 229, np.str_('unsafe'): 71}, of X_RA 69/69, time med 25.7 s, peak omega 0.15, peak a 0.007, peak over all runs 0.17/0.01 (26s)
+r0=0.04: speed [0.003, 0.124] | in X_RA 36, in terminal set 20 | URA {np.str_('unsafe'): 108, np.str_('reached'): 192}, of X_RA 36/36, time med 24.3 s, peak omega 1.00, peak a 0.008, peak over all runs 1.00/0.01 (23s)
+r0=0.05: speed [0.002, 0.134] | in X_RA 23, in terminal set 11 | URA {np.str_('unsafe'): 151, np.str_('reached'): 149}, of X_RA 23/23, time med 21.2 s, peak omega 0.75, peak a 0.008, peak over all runs 0.92/0.01 (20s)
+{"r0": 0.02, "u_max": [3, 3], "N": 25, "in_xra": 124, "in_terminal": 67, "ura": 267, "ura_within_bounds": 267, "vanilla": 166, "rampc": 238, "ra_not_vanilla": 72, "vanilla_not_ra": 0, "ra_not_ura": 4, "ura_not_ra": 33, "ra_in_xra": 124, "ra_in_terminal": 67, "ra_later_infeasible": 0, "ra_status": {"infeasible": 62, "reached": 238}, "common": 234, "t_ura_med": 25.218619774509953, "t_ra_med": 1.3000000000000005, "cost_ura_med": 261.4887408650316, "cost_ra_med": 15.506062898756413, "peak_ura": [0.1621295859488566, 0.005996031543076067], "peak_ra": [2.9997370129613166, 2.999952745025947]} (64s)
+{"r0": 0.02, "u_max": [3, 3], "N": 30, "in_xra": 124, "in_terminal": 67, "ura": 267, "ura_within_bounds": 267, "vanilla": 216, "rampc": 281, "ra_not_vanilla": 65, "vanilla_not_ra": 0, "ra_not_ura": 21, "ura_not_ra": 7, "ra_in_xra": 124, "ra_in_terminal": 67, "ra_later_infeasible": 0, "ra_status": {"infeasible": 19, "reached": 281}, "common": 260, "t_ura_med": 29.09908458615961, "t_ra_med": 1.3250000000000006, "cost_ura_med": 309.463575004119, "cost_ra_med": 17.08944941684689, "peak_ura": [0.3051454914360066, 0.005996031543076067], "peak_ra": [2.9998780305378565, 2.999961063597405]} (83s)
+{"r0": 0.02, "u_max": [2, 2], "N": 40, "in_xra": 124, "in_terminal": 67, "ura": 267, "ura_within_bounds": 267, "vanilla": 256, "rampc": 282, "ra_not_vanilla": 26, "vanilla_not_ra": 0, "ra_not_ura": 21, "ura_not_ra": 6, "ra_in_xra": 124, "ra_in_terminal": 67, "ra_later_infeasible": 0, "ra_status": {"infeasible": 18, "reached": 282}, "common": 261, "t_ura_med": 29.105325901801553, "t_ra_med": 1.4000000000000006, "cost_ura_med": 310.313372323271, "cost_ra_med": 19.76916816387197, "peak_ura": [0.1621295859488566, 0.005996031543076067], "peak_ra": [1.9999343360125406, 1.9999718369608313]} (116s)
+{"r0": 0.03, "u_max": [3, 3], "N": 25, "in_xra": 69, "in_terminal": 32, "ura": 229, "ura_within_bounds": 229, "vanilla": 166, "rampc": 236, "ra_not_vanilla": 70, "vanilla_not_ra": 0, "ra_not_ura": 22, "ura_not_ra": 15, "ra_in_xra": 69, "ra_in_terminal": 32, "ra_later_infeasible": 0, "ra_status": {"infeasible": 64, "reached": 236}, "common": 214, "t_ura_med": 24.169196839924233, "t_ra_med": 1.2500000000000004, "cost_ura_med": 218.58522320231316, "cost_ra_med": 14.204447400405458, "peak_ura": [0.14624517289829242, 0.006767527520881682], "peak_ra": [2.999830489638186, 2.9999525030395815]} (65s)
+{"r0": 0.03, "u_max": [3, 3], "N": 30, "in_xra": 69, "in_terminal": 32, "ura": 229, "ura_within_bounds": 229, "vanilla": 214, "rampc": 272, "ra_not_vanilla": 58, "vanilla_not_ra": 0, "ra_not_ura": 45, "ura_not_ra": 2, "ra_in_xra": 69, "ra_in_terminal": 32, "ra_later_infeasible": 0, "ra_status": {"infeasible": 28, "reached": 272}, "common": 227, "t_ura_med": 25.5666490747063, "t_ra_med": 1.1500000000000004, "cost_ura_med": 263.2896252943619, "cost_ra_med": 14.607893786328242, "peak_ura": [0.14624517289829242, 0.006767527520881682], "peak_ra": [2.999919764602257, 2.9999609481317635]} (82s)
+{"r0": 0.03, "u_max": [2, 2], "N": 40, "in_xra": 69, "in_terminal": 32, "ura": 229, "ura_within_bounds": 229, "vanilla": 252, "rampc": 290, "ra_not_vanilla": 38, "vanilla_not_ra": 0, "ra_not_ura": 62, "ura_not_ra": 1, "ra_in_xra": 69, "ra_in_terminal": 32, "ra_later_infeasible": 0, "ra_status": {"infeasible": 10, "reached": 290}, "common": 228, "t_ura_med": 25.65211640169199, "t_ra_med": 1.3000000000000005, "cost_ura_med": 263.8594718867403, "cost_ra_med": 16.833824894789977, "peak_ura": [0.14624517289829242, 0.006767527520881682], "peak_ra": [1.9999558696155169, 1.9999719074602935]} (122s)
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+exit 0

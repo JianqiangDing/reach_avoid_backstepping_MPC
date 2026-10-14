@@ -1,0 +1,80 @@
+field speed |k1| at the 300 positions: min 0.002, median 0.062, max 0.098; positions with psi >= delta_s/lambda: 234/300
+at rest, heading in [2pi/3,4pi/3]            u_max=(3,3) N=25: in X_RA   0, in terminal set   0 | vanilla 161 | RA-MPC 233 (later infeasible 0, t_entry med 1.30 s)  (73s)
+at rest, any heading                         u_max=(3,3) N=25: in X_RA   0, in terminal set   0 | vanilla 157 | RA-MPC 235 (later infeasible 0, t_entry med 1.40 s)  (76s)
+at rest, heading in [2pi/3,4pi/3]            u_max=(5,5) N=25: in X_RA   0, in terminal set   0 | vanilla 247 | RA-MPC 283 (later infeasible 0, t_entry med 1.10 s)  (73s)
+at rest, any heading                         u_max=(5,5) N=25: in X_RA   0, in terminal set   0 | vanilla 253 | RA-MPC 280 (later infeasible 0, t_entry med 1.10 s)  (74s)
+near rest v0=0.02, any heading               u_max=(3,3) N=25: in X_RA   1, in terminal set   0 | vanilla 154 | RA-MPC 235 (later infeasible 0, t_entry med 1.45 s) | controller alone: reached  43 (of those inside X_RA: 1/1), {'unsafe': 256, 'reached': 43, 'v=0': 1}, runs exceeding the bounds 6, reach time med 68.6 s  (124s)
+near rest v0=0.05, any heading               u_max=(3,3) N=25: in X_RA   6, in terminal set   4 | vanilla 150 | RA-MPC 236 (later infeasible 0, t_entry med 1.40 s) | controller alone: reached  42 (of those inside X_RA: 6/6), {'unsafe': 258, 'reached': 42}, runs exceeding the bounds 2, reach time med 26.2 s  (85s)
+field-relative, |ydot - k1| <= 0.02          u_max=(3,3) N=25: in X_RA 136, in terminal set  64 | vanilla 165 | RA-MPC 240 (later infeasible 0, t_entry med 1.35 s) | controller alone: reached 259 (of those inside X_RA: 136/136), {'unsafe': 41, 'reached': 259}, runs exceeding the bounds 0, reach time med 29.2 s  (101s)
+field-relative, |ydot - k1| <= 0.05          u_max=(3,3) N=25: in X_RA  25, in terminal set  11 | vanilla 164 | RA-MPC 244 (later infeasible 0, t_entry med 1.30 s) | controller alone: reached 155 (of those inside X_RA: 25/25), {'unsafe': 145, 'reached': 155}, runs exceeding the bounds 1, reach time med 20.2 s  (91s)
+field-relative, |ydot - k1| <= 0.1           u_max=(3,3) N=25: in X_RA   4, in terminal set   1 | vanilla 165 | RA-MPC 234 (later infeasible 0, t_entry med 1.30 s) | controller alone: reached  63 (of those inside X_RA: 4/4), {'unsafe': 235, 'reached': 63, 'v=0': 2}, runs exceeding the bounds 1, reach time med 16.6 s  (85s)
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
