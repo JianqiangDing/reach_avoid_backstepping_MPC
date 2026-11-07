@@ -2,19 +2,16 @@
 
 Code and data of the article *Reach-Avoid Model Predictive Control with
 Guaranteed Recursive Feasibility via Input Constrained Backstepping* by
-Jianqiang Ding, Nishant Jayesh Bhave and Shankar A. Deka (submitted to the
-IEEE Open Journal of Control Systems; preprint arXiv:2604.03407).
+Jianqiang Ding, Nishant Jayesh Bhave and Shankar A. Deka.
 
 ## Intent
 
-The article proposes a sampled-data model predictive controller (RA-MPC) for
-control-affine nonlinear systems that must reach a target set while staying
-inside a safe set under input constraints. Its terminal set is a subset of an
-input-constrained reach-avoid set, built by backstepping from an exponential
-control guidance-barrier function (ECGBF), and its terminal cost is built from
-the same function. The code reproduces every certificate, simulation, table,
-figure and video of the article, and the committed data allow every figure and
-number to be regenerated without rerunning the experiments.
+The code implements the reach-avoid model predictive controller (RA-MPC) of
+the article, whose terminal set is an input-constrained reach-avoid set built
+by backstepping from an exponential control guidance-barrier function, and
+reproduces every certificate, simulation, table, figure and video of the
+article. The committed data allow every figure and number to be regenerated
+without rerunning the experiments.
 
 ## Components
 
